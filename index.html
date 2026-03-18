@@ -2,6 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0B38E3L84L"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-0B38E3L84L');
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Waveform</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
@@ -282,8 +290,9 @@ document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style
 let style='basic', color=false, shapes=[], fid=null;
 let ACX=null, ANA=null, SRC=null, BUF=null;
 let playing=false, t0=0, poff=0, dur=0, nrg=0;
-let suppress=false, betaDone=false, srcGen=0, triggered=false;
+let suppress=false, srcGen=0;
 let recorder=null, recChunks=[], isRecording=false;
+let betaDone = localStorage.getItem('waveform_beta') === 'true';
 const COLS=['204,255,0','79,142,247','239,68,68','16,185,129','245,158,11','168,85,247'];
 
 // ─── DRAW ─────────────────────────────────────
@@ -297,7 +306,6 @@ function tick(){
     const el=ACX.currentTime-t0;
     document.getElementById('timer').textContent=fmt(el)+' / '+fmt(dur);
     document.getElementById('prog-fill').style.width=Math.min(el/dur*100,100)+'%';
-    if(!triggered&&!betaDone&&el>=45)fireBeta();
   }else{nrg=.08;if(Math.random()<.035)spawn(1,.5);}
   shapes=shapes.filter(s=>s.age<s.life);
 
@@ -381,10 +389,7 @@ async function startAudio(){
       document.getElementById('playBtn').textContent='Play';
       document.getElementById('playBtn').classList.remove('on');
       stopRecording();
-      setTimeout(()=>{
-        if(betaDone){ showSum(); }
-        else{ document.getElementById('betaModal').classList.add('show'); }
-      },800);
+      setTimeout(()=>{ document.getElementById('betaModal').classList.add('show'); },800);
     }
   };
 }
@@ -410,7 +415,7 @@ function doRestart(){
   stopRecording();
   stopAudio();
   recChunks=[];
-  poff=0;shapes=[];triggered=false;
+  poff=0;shapes=[];
   startRecording();
   startAudio();
 }
@@ -433,16 +438,6 @@ function pickStylePill(name,el){
 // Clear = full page reload. Guaranteed clean state.
 function doClear(){window.location.reload();}
 
-// ─── 45s TRIGGER ──────────────────────────────
-
-function fireBeta(){
-  triggered=true;
-  stopAudio();
-  document.getElementById('playBtn').textContent='Play';
-  document.getElementById('playBtn').classList.remove('on');
-  document.getElementById('betaModal').classList.add('show');
-}
-
 // ─── MODALS ───────────────────────────────────
 function openInfo(){document.getElementById('infoModal').classList.add('show');setTimeout(()=>document.getElementById('iName').focus(),100);}
 function doContinue(){document.getElementById('infoModal').classList.remove('show');document.getElementById('fileInput').click();}
@@ -451,20 +446,25 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementB
 
 function skipBeta(){
   document.getElementById('betaModal').classList.remove('show');
-  startAudio();
+  showSum();
 }
 
 function submitBeta(){
   const em=document.getElementById('betaEmail').value;
   if(!em||!em.includes('@')){document.getElementById('betaEmail').style.borderColor='rgba(239,68,68,0.5)';return;}
-  betaDone=true;triggered=true;
+  betaDone=true;
+  localStorage.setItem('waveform_beta','true');
+  // Send email to Resend via Cloudflare Worker
+  fetch('https://waveform-email.thedobrien.workers.dev', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({email: em})
+  }).catch(()=>{}); // silent fail - don't block UX
   document.getElementById('betaForm').style.display='none';
   document.getElementById('betaOk').style.display='block';
   setTimeout(()=>{
     document.getElementById('betaModal').classList.remove('show');
-    // If song is over show summary, otherwise resume
-    if(!playing){ showSum(); }
-    else{ startAudio(); }
+    showSum();
   },2000);
 }
 
@@ -483,16 +483,7 @@ function fromSummary(){
   triggerDownload();
 }
 function triggerDownload(){
-  // If recorder is still stopping, wait for onstop to finish
-  if(recorder && recorder.state !== 'inactive'){
-    recorder.onstop = () => {
-      isRecording = false;
-      doDownload();
-    };
-    recorder.stop();
-  } else {
-    doDownload();
-  }
+  doDownload();
 }
 
 function doDownload(){
@@ -534,11 +525,10 @@ function startRecording(){
   const mime = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(m=>MediaRecorder.isTypeSupported(m)) || 'video/webm';
 
   recorder = new MediaRecorder(combined, {mimeType:mime, videoBitsPerSecond:20000000});
+  recorder._audioDest = audioDest;
   recorder.ondataavailable = e => { if(e.data.size>0) recChunks.push(e.data); };
   recorder.onstop = () => {
     isRecording = false;
-    try{ANA.disconnect(audioDest);}catch(e){}
-    // chunks are ready - download triggered by user action in summary
   };
 
   recorder.start(100); // collect data every 100ms
@@ -562,7 +552,7 @@ document.getElementById('fileInput').addEventListener('change',async e=>{
   ANA.connect(ACX.destination);
 
   BUF=await ACX.decodeAudioData(await file.arrayBuffer());
-  dur=BUF.duration;poff=0;betaDone=false;triggered=false;
+  dur=BUF.duration;poff=0;betaDone=false;
 
   setTimeout(()=>{
     document.getElementById('controls').classList.add('show');
