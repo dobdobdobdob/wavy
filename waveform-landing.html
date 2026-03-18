@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waveform — Turn Your Music Into Visual Art</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080808;
+      --bg1: #0e0e0e;
+      --bg2: #141414;
+      --accent: #CCFF00;
+      --accent-dim: rgba(204,255,0,0.08);
+      --accent-border: rgba(204,255,0,0.2);
+      --text1: #F5F5F5;
+      --text2: #888;
+      --text3: #444;
+      --border: rgba(255,255,255,0.06);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--bg);
+      color: var(--text1);
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 1.25rem 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.3s;
+    }
+
+    nav.scrolled {
+      background: rgba(8,8,8,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+      color: var(--text1);
+      text-decoration: none;
+    }
+
+    .nav-logo span { color: var(--accent); }
+
+    .nav-cta {
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #000;
+      background: var(--accent);
+      border: none;
+      padding: 0.6rem 1.5rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .nav-cta:hover { background: #fff; transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 8rem 2rem 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 60%, rgba(204,255,0,0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Animated grid */
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(204,255,0,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(204,255,0,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%);
+    }
+
+    .hero-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.2s forwards;
+    }
+
+    .hero-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(3rem, 8vw, 7rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 0.95;
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp 0.9s ease 0.4s forwards;
+    }
+
+    .hero-title .accent { color: var(--accent); }
+
+    .hero-desc {
+      font-size: clamp(0.85rem, 1.5vw, 1rem);
+      color: var(--text2);
+      max-width: 480px;
+      line-height: 1.8;
+      margin-bottom: 2.5rem;
+      opacity: 0;
+      animation: fadeUp 0.9s ease 0.6s forwards;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.9s ease 0.8s forwards;
+    }
+
+    .btn-primary {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #000;
+      background: var(--accent);
+      border: none;
+      padding: 1rem 2.5rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: inline-block;
+    }
+
+    .btn-primary:hover { background: #fff; transform: translateY(-2px); }
+
+    .btn-ghost {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text2);
+      background: none;
+      border: 1px solid var(--border);
+      padding: 1rem 2.5rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: inline-block;
+    }
+
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.3); color: var(--text1); }
+
+    /* Counter */
+    .social-proof {
+      margin-top: 2.5rem;
+      font-size: 0.68rem;
+      color: var(--text3);
+      letter-spacing: 0.1em;
+      opacity: 0;
+      animation: fadeUp 0.9s ease 1s forwards;
+    }
+
+    .social-proof span { color: var(--accent); }
+
+    /* ── DEMO CANVAS ── */
+    #demo {
+      padding: 5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .section-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .demo-frame {
+      width: 100%;
+      max-width: 900px;
+      aspect-ratio: 16/9;
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .demo-frame canvas {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+    }
+
+    .demo-label {
+      position: absolute;
+      bottom: 1rem; left: 1.5rem;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+    }
+
+    /* ── HOW IT WORKS ── */
+    #how {
+      padding: 6rem 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      margin-bottom: 3.5rem;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .step {
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+    }
+
+    .step-num {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    .step-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .step-desc {
+      font-size: 0.78rem;
+      color: var(--text2);
+      line-height: 1.75;
+    }
+
+    /* ── PRICING ── */
+    #pricing {
+      padding: 6rem 2rem;
+      background: var(--bg1);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pricing-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+
+    .price-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      padding: 2.5rem;
+      position: relative;
+      transition: border-color 0.2s;
+    }
+
+    .price-card:hover { border-color: rgba(255,255,255,0.15); }
+
+    .price-card.featured {
+      border-color: var(--accent-border);
+      background: var(--accent-dim);
+    }
+
+    .price-card.featured::before {
+      content: 'BEST VALUE';
+      position: absolute;
+      top: -1px; right: 2rem;
+      font-size: 0.55rem;
+      letter-spacing: 0.2em;
+      background: var(--accent);
+      color: #000;
+      padding: 0.3rem 0.75rem;
+    }
+
+    .price-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text2);
+      margin-bottom: 1.25rem;
+    }
+
+    .price-amount {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 3.5rem;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 0.4rem;
+    }
+
+    .price-card.featured .price-amount { color: var(--accent); }
+
+    .price-per {
+      font-size: 0.7rem;
+      color: var(--text2);
+      margin-bottom: 2rem;
+    }
+
+    .price-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-bottom: 2rem;
+    }
+
+    .price-features li {
+      font-size: 0.75rem;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .price-features li::before {
+      content: '→';
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .price-btn {
+      width: 100%;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 0.9rem;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .price-card.featured .price-btn {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
+
+    .price-btn:hover { border-color: rgba(255,255,255,0.3); color: var(--text1); }
+    .price-card.featured .price-btn:hover { background: #fff; border-color: #fff; }
+
+    /* ── EMAIL CAPTURE ── */
+    #waitlist {
+      padding: 8rem 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .waitlist-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(204,255,0,0.05) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .waitlist-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(2rem, 5vw, 4rem);
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      margin-bottom: 1rem;
+      position: relative;
+    }
+
+    .waitlist-desc {
+      font-size: 0.82rem;
+      color: var(--text2);
+      margin-bottom: 2.5rem;
+      line-height: 1.75;
+      position: relative;
+    }
+
+    .email-form {
+      display: flex;
+      gap: 0;
+      max-width: 480px;
+      margin: 0 auto 1.5rem;
+      position: relative;
+    }
+
+    .email-input {
+      flex: 1;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-right: none;
+      color: var(--text1);
+      padding: 0.9rem 1.25rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .email-input:focus { border-color: rgba(255,255,255,0.2); }
+    .email-input::placeholder { color: var(--text3); }
+
+    .email-submit {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 0.9rem 1.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .email-submit:hover { background: #fff; }
+
+    .waitlist-count {
+      font-size: 0.68rem;
+      color: var(--text3);
+      letter-spacing: 0.1em;
+      position: relative;
+    }
+
+    .waitlist-count span { color: var(--accent); }
+
+    #success-msg {
+      display: none;
+      font-size: 0.78rem;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      margin-top: 1rem;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 2rem 3rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 0.9rem;
+      letter-spacing: -0.02em;
+    }
+
+    .footer-logo span { color: var(--accent); }
+
+    .footer-copy {
+      font-size: 0.65rem;
+      color: var(--text3);
+      letter-spacing: 0.08em;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .steps { grid-template-columns: 1fr; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 1rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav id="navbar">
+    <a href="#" class="nav-logo">Wave<span>form</span></a>
+    <a href="#waitlist" class="nav-cta">Get Early Access</a>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
+    <div class="hero-eyebrow">Introducing Waveform</div>
+    <h1 class="hero-title">
+      Your music.<br>
+      <span class="accent">Visualized.</span><br>
+      Downloaded.
+    </h1>
+    <p class="hero-desc">
+      Upload any track and watch it transform into stunning geometric visuals in real time. Preview free — download your video for $2.
+    </p>
+    <div class="hero-actions">
+      <a href="#waitlist" class="btn-primary">Get Early Access</a>
+      <a href="#how" class="btn-ghost">See How It Works</a>
+    </div>
+    <div class="social-proof">
+      <span id="counter">847</span> creators already on the waitlist
+    </div>
+  </section>
+
+  <!-- DEMO -->
+  <section id="demo">
+    <div class="section-label">Live Demo</div>
+    <div class="demo-frame">
+      <canvas id="demoCanvas"></canvas>
+      <div class="demo-label">Move your cursor · Shapes react to audio</div>
+      <div id="demo-style-label" style="position:absolute;top:1rem;right:1.5rem;font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(204,255,0,0.6);transition:opacity 0.4s;">BASIC</div>
+    </div>
+    <p style="font-size:0.72rem;color:var(--text2);text-align:center;max-width:500px;line-height:1.7">
+      This is a live preview. Upload your own track at <a href="https://dobdobdobdob.github.io/wavy" target="_blank" style="color:var(--accent)">dobdobdobdob.github.io/wavy</a> to see it visualize your music in real time.
+    </p>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how">
+    <div class="section-label" style="margin-bottom:1rem">How It Works</div>
+    <h2 class="section-title">Three steps.<br>One great video.</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01 —</div>
+        <div class="step-title">Upload Your Track</div>
+        <div class="step-desc">Drop in any MP3, WAV, or AAC file. Waveform reads the audio in your browser — nothing is uploaded to a server.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02 —</div>
+        <div class="step-title">Preview Your Visual</div>
+        <div class="step-desc">Watch geometric shapes come alive in real time, reacting to every beat, drop, and frequency in your track. Completely free to preview.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03 —</div>
+        <div class="step-title">Download Your Video</div>
+        <div class="step-desc">Pay $2 and download a clean 1080p MP4 — no watermark, no subscription. Perfect for YouTube, Reels, and Spotify Canvas.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing">
+    <div class="pricing-inner">
+      <div class="section-label" style="margin-bottom:1rem">Pricing</div>
+      <h2 class="section-title">Simple.<br>No subscriptions.</h2>
+      <div class="pricing-grid">
+        <div class="price-card">
+          <div class="price-label">Single Export</div>
+          <div class="price-amount">$2</div>
+          <div class="price-per">per video download</div>
+          <ul class="price-features">
+            <li>1080p MP4 export</li>
+            <li>No watermark</li>
+            <li>Full track length</li>
+            <li>All visual styles</li>
+          </ul>
+          <button class="price-btn" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})">Get Early Access</button>
+        </div>
+        <div class="price-card featured">
+          <div class="price-label">5-Pack</div>
+          <div class="price-amount">$7</div>
+          <div class="price-per">5 video downloads — save 30%</div>
+          <ul class="price-features">
+            <li>5 × 1080p MP4 exports</li>
+            <li>No watermark</li>
+            <li>Full track length</li>
+            <li>All visual styles</li>
+            <li>Priority processing</li>
+          </ul>
+          <button class="price-btn" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})">Get Early Access</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WAITLIST -->
+  <section id="waitlist">
+    <div class="waitlist-bg"></div>
+    <h2 class="waitlist-title">Get early access.<br>First export <span style="color:var(--accent)">free.</span></h2>
+    <p class="waitlist-desc">Join the waitlist and get your first video export on us when we launch.</p>
+    <div class="email-form">
+      <input type="email" class="email-input" id="emailInput" placeholder="your@email.com">
+      <button class="email-submit" onclick="submitEmail()">Join Waitlist</button>
+    </div>
+    <div class="waitlist-count">Join <span id="waitlistCount">847</span> creators already signed up</div>
+    <div id="success-msg">✓ You're on the list — we'll be in touch!</div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">Wave<span>form</span></div>
+    <div class="footer-copy">© 2026 Waveform · Built by David O'Brien</div>
+  </footer>
+
+  <script>
+    // ── NAV SCROLL ──
+    window.addEventListener('scroll', () => {
+      document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+    });
+
+    // ── COUNTER ANIMATION ──
+    function animCount(el, target) {
+      let current = 0;
+      const step = target / 60;
+      const timer = setInterval(() => {
+        current = Math.min(current + step, target);
+        el.textContent = Math.floor(current).toLocaleString();
+        if (current >= target) clearInterval(timer);
+      }, 24);
+    }
+
+    setTimeout(() => {
+      animCount(document.getElementById('counter'), 847);
+      animCount(document.getElementById('waitlistCount'), 847);
+    }, 1200);
+
+    // ── EMAIL SUBMIT ──
+    function submitEmail() {
+      const email = document.getElementById('emailInput').value;
+      if (!email || !email.includes('@')) {
+        document.getElementById('emailInput').style.borderColor = 'rgba(239,68,68,0.5)';
+        return;
+      }
+      document.getElementById('emailInput').style.borderColor = 'var(--accent-border)';
+      document.querySelector('.email-form').style.display = 'none';
+      document.querySelector('.waitlist-count').style.display = 'none';
+      document.getElementById('success-msg').style.display = 'block';
+
+      // Bump counter
+      const c = document.getElementById('counter');
+      c.textContent = (parseInt(c.textContent.replace(',','')) + 1).toLocaleString();
+    }
+
+    document.getElementById('emailInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitEmail();
+    });
+
+    // ── DEMO CANVAS (idle geometric animation) ──
+    const canvas = document.getElementById('demoCanvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, dpr, shapes = [], mx = -1000, my = -1000;
+    let currentDemoStyle = 'basic';
+    const styleNames = ['basic', 'animals', 'flowers', 'intergalactic'];
+    const styleLabels = ['BASIC', 'ANIMALS', 'FLOWERS', 'GALACTIC'];
+    let styleIdx = 0;
+
+    function resizeDemo() {
+      dpr = window.devicePixelRatio || 1;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      W = rect.width; H = rect.height;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+      ctx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resizeDemo);
+    resizeDemo();
+
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      mx = e.clientX - rect.left; my = e.clientY - rect.top;
+    });
+    canvas.addEventListener('mouseleave', () => { mx = -1000; my = -1000; });
+
+    // ── PRIMITIVES ──
+    function drawPoly(x,y,sides,size,angle){ctx.beginPath();for(let i=0;i<=sides;i++){const a=angle+(i/sides)*Math.PI*2;i===0?ctx.moveTo(x+Math.cos(a)*size,y+Math.sin(a)*size):ctx.lineTo(x+Math.cos(a)*size,y+Math.sin(a)*size);}ctx.closePath();}
+    function drawLine(x,y,size,angle){ctx.beginPath();ctx.moveTo(x+Math.cos(angle)*size,y+Math.sin(angle)*size);ctx.lineTo(x-Math.cos(angle)*size,y-Math.sin(angle)*size);}
+    function drawCross(x,y,size,angle){drawLine(x,y,size,angle);ctx.moveTo(x+Math.cos(angle+Math.PI/2)*size,y+Math.sin(angle+Math.PI/2)*size);ctx.lineTo(x-Math.cos(angle+Math.PI/2)*size,y-Math.sin(angle+Math.PI/2)*size);}
+    function drawStar(x,y,size,angle){const pts=5,inner=size*.4;ctx.beginPath();for(let i=0;i<=pts*2;i++){const r=i%2===0?size:inner,a=angle+(i/(pts*2))*Math.PI*2;i===0?ctx.moveTo(x+Math.cos(a)*r,y+Math.sin(a)*r):ctx.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r);}ctx.closePath();}
+
+    // ── STYLE MAKERS ──
+    const DEMO_STYLES = {
+      basic: {
+        make(){ const T=['triangle','quad','pentagon','hexagon','line','cross','star'],type=T[Math.floor(Math.random()*T.length)];return{type,sides:{triangle:3,quad:4,pentagon:5,hexagon:6}[type]||0,x:Math.random()*W,y:Math.random()*H,size:15+Math.random()*80,angle:Math.random()*Math.PI*2,dx:(Math.random()-.5)*.4,dy:(Math.random()-.5)*.4,spin:(Math.random()-.5)*.015,alpha:.08+Math.random()*.35,lineW:.3+Math.random()*1.2,life:.6+Math.random()*.4,age:Math.random()*.3};},
+        draw(s){if(s.type==='line')drawLine(s.x,s.y,s.size,s.angle);else if(s.type==='cross')drawCross(s.x,s.y,s.size,s.angle);else if(s.type==='star')drawStar(s.x,s.y,s.size,s.angle);else drawPoly(s.x,s.y,s.sides,s.size,s.angle);}
+      },
+      animals: {
+        make(){const T=['bird','fish','butterfly','wolf','whale'];return{type:T[Math.floor(Math.random()*T.length)],x:Math.random()*W,y:Math.random()*H,size:18+Math.random()*50,angle:Math.random()*Math.PI*2,dx:(Math.random()-.5)*.35,dy:(Math.random()-.5)*.35,spin:(Math.random()-.5)*.012,alpha:.15+Math.random()*.45,lineW:.4+Math.random()*1,life:.7+Math.random()*.5,age:Math.random()*.3,phase:Math.random()*Math.PI*2};},
+        draw(s){const r=s.size,t=s.age/s.life;ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.angle);
+          if(s.type==='bird'){ctx.beginPath();ctx.moveTo(-r,0);ctx.quadraticCurveTo(-r*.4,-r*.5+Math.sin(s.phase+t*8)*r*.18,0,0);ctx.quadraticCurveTo(r*.4,-r*.5+Math.sin(s.phase+t*8+1)*r*.18,r,0);ctx.stroke();ctx.beginPath();ctx.arc(0,0,r*.07,0,Math.PI*2);ctx.fill();}
+          else if(s.type==='fish'){ctx.beginPath();ctx.ellipse(0,0,r*.6,r*.25,0,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(-r*.55,0);ctx.lineTo(-r,r*.25);ctx.lineTo(-r,-r*.25);ctx.closePath();ctx.stroke();}
+          else if(s.type==='butterfly'){ctx.beginPath();ctx.ellipse(-r*.35,-r*.2,r*.4,r*.25,-.4,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.ellipse(r*.35,-r*.2,r*.4,r*.25,.4,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.ellipse(-r*.25,r*.2,r*.28,r*.18,-.6,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.ellipse(r*.25,r*.2,r*.28,r*.18,.6,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(0,-r*.4);ctx.lineTo(0,r*.4);ctx.stroke();}
+          else if(s.type==='wolf'){ctx.beginPath();ctx.arc(0,0,r*.5,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(-r*.25,-r*.5);ctx.lineTo(-r*.45,-r*.85);ctx.lineTo(-r*.05,-r*.5);ctx.stroke();ctx.beginPath();ctx.moveTo(r*.25,-r*.5);ctx.lineTo(r*.45,-r*.85);ctx.lineTo(r*.05,-r*.5);ctx.stroke();}
+          else{ctx.beginPath();ctx.ellipse(0,0,r*.7,r*.3,0,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(-r*.65,0);ctx.lineTo(-r*.95,-r*.3);ctx.lineTo(-r*.85,0);ctx.lineTo(-r*.95,r*.3);ctx.closePath();ctx.stroke();}
+          ctx.restore();}
+      },
+      flowers: {
+        make(){const T=['bloom','spiral','lotus','spiro'];return{type:T[Math.floor(Math.random()*T.length)],x:Math.random()*W,y:Math.random()*H,size:18+Math.random()*55,angle:Math.random()*Math.PI*2,dx:(Math.random()-.5)*.25,dy:(Math.random()-.5)*.25,spin:(Math.random()-.5)*.018,alpha:.12+Math.random()*.45,lineW:.4+Math.random()*1.1,life:.8+Math.random()*.5,age:Math.random()*.3,petals:4+Math.floor(Math.random()*5)};},
+        draw(s){const r=s.size,t=s.age/s.life;ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.angle+t*.5);
+          if(s.type==='bloom'){for(let i=0;i<s.petals;i++){const a=(i/s.petals)*Math.PI*2;ctx.beginPath();ctx.ellipse(Math.cos(a)*r*.5,Math.sin(a)*r*.5,r*.35,r*.18,a,0,Math.PI*2);ctx.stroke();}ctx.beginPath();ctx.arc(0,0,r*.2,0,Math.PI*2);ctx.stroke();}
+          else if(s.type==='lotus'){for(let i=0;i<s.petals;i++){const a=(i/s.petals)*Math.PI*2;ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(Math.cos(a-.4)*r*.8,Math.sin(a-.4)*r*.8,Math.cos(a)*r,Math.sin(a)*r);ctx.quadraticCurveTo(Math.cos(a+.4)*r*.8,Math.sin(a+.4)*r*.8,0,0);ctx.stroke();}}
+          else if(s.type==='spiral'){ctx.beginPath();for(let i=0;i<120;i++){const a=i*.15,rad=(i/120)*r;i===0?ctx.moveTo(Math.cos(a)*rad,Math.sin(a)*rad):ctx.lineTo(Math.cos(a)*rad,Math.sin(a)*rad);}ctx.stroke();}
+          else{ctx.beginPath();for(let i=0;i<=360;i++){const a=i*Math.PI/180,rad=r*Math.sin(s.petals*a);i===0?ctx.moveTo(Math.cos(a)*rad,Math.sin(a)*rad):ctx.lineTo(Math.cos(a)*rad,Math.sin(a)*rad);}ctx.stroke();}
+          ctx.restore();}
+      },
+      intergalactic: {
+        make(){const T=['planet','orbit','starburst','comet','galaxy'];return{type:T[Math.floor(Math.random()*T.length)],x:Math.random()*W,y:Math.random()*H,size:15+Math.random()*60,angle:Math.random()*Math.PI*2,dx:(Math.random()-.5)*.2,dy:(Math.random()-.5)*.2,spin:(Math.random()-.5)*.02,alpha:.12+Math.random()*.45,lineW:.3+Math.random()*1.2,life:.7+Math.random()*.5,age:Math.random()*.3,rings:1+Math.floor(Math.random()*2),points:5+Math.floor(Math.random()*6)};},
+        draw(s){const r=s.size;ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.angle);
+          if(s.type==='planet'){ctx.beginPath();ctx.arc(0,0,r*.4,0,Math.PI*2);ctx.stroke();for(let i=0;i<s.rings;i++){ctx.beginPath();ctx.ellipse(0,0,r*(.7+i*.25),r*(.7+i*.25)*.3,Math.PI*.15,0,Math.PI*2);ctx.stroke();}}
+          else if(s.type==='orbit'){ctx.beginPath();ctx.arc(0,0,r*.1,0,Math.PI*2);ctx.fill();for(let i=0;i<s.rings+1;i++){const rr=r*(.3+i*.3);ctx.beginPath();ctx.ellipse(0,0,rr,rr*.45,.3+i*.2,0,Math.PI*2);ctx.stroke();const a=s.age*3+i*2;ctx.beginPath();ctx.arc(Math.cos(a)*rr,Math.sin(a)*rr*.45,r*.05,0,Math.PI*2);ctx.fill();}}
+          else if(s.type==='starburst'){for(let i=0;i<s.points;i++){const a=(i/s.points)*Math.PI*2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);ctx.stroke();}ctx.beginPath();ctx.arc(0,0,r*.15,0,Math.PI*2);ctx.stroke();}
+          else if(s.type==='comet'){ctx.beginPath();ctx.arc(0,0,r*.12,0,Math.PI*2);ctx.fill();ctx.beginPath();for(let i=0;i<8;i++){const spread=(i/7)*(Math.PI*.4)-(Math.PI*.2),len=r*(1-i/8);ctx.moveTo(0,0);ctx.lineTo(-Math.cos(spread)*len,-Math.sin(spread)*len);}ctx.stroke();}
+          else{for(let arm=0;arm<3;arm++){ctx.beginPath();const off=(arm/3)*Math.PI*2;for(let i=0;i<80;i++){const a=i*.12+off,rad=(i/80)*r;i===0?ctx.moveTo(Math.cos(a)*rad,Math.sin(a)*rad):ctx.lineTo(Math.cos(a)*rad,Math.sin(a)*rad);}ctx.stroke();}ctx.beginPath();ctx.arc(0,0,r*.08,0,Math.PI*2);ctx.fill();}
+          ctx.restore();}
+      }
+    };
+
+    function switchDemoStyle() {
+      styleIdx = (styleIdx + 1) % styleNames.length;
+      currentDemoStyle = styleNames[styleIdx];
+      shapes = [];
+      const lbl = document.getElementById('demo-style-label');
+      lbl.style.opacity = '0';
+      setTimeout(() => { lbl.textContent = styleLabels[styleIdx]; lbl.style.opacity = '1'; }, 300);
+    }
+
+    setInterval(switchDemoStyle, 3000);
+
+    for (let i = 0; i < 40; i++) shapes.push(DEMO_STYLES[currentDemoStyle].make());
+
+    function demoLoop() {
+      requestAnimationFrame(demoLoop);
+      ctx.fillStyle = 'rgba(14,14,14,0.25)';
+      ctx.fillRect(0, 0, W, H);
+
+      const style = DEMO_STYLES[currentDemoStyle];
+      if (shapes.length < 40 && Math.random() < 0.08) shapes.push(style.make());
+
+      shapes = shapes.filter(s => s.age < s.life);
+      shapes.forEach((s, i) => {
+        s.age += 0.003; s.angle += s.spin;
+        const dx = s.x - mx, dy = s.y - my, dist = Math.sqrt(dx*dx+dy*dy);
+        if (dist < 100 && dist > 0) { const f=(1-dist/100)*2; s.dx+=(dx/dist)*f*.05; s.dy+=(dy/dist)*f*.05; }
+        s.x += s.dx; s.y += s.dy; s.dx *= .98; s.dy *= .98;
+        if (s.x < -100) s.x = W+100; if (s.x > W+100) s.x = -100;
+        if (s.y < -100) s.y = H+100; if (s.y > H+100) s.y = -100;
+        const t = s.age/s.life, fade = t<.2?t/.2:1-((t-.2)/.8);
+        ctx.strokeStyle = `rgba(204,255,0,${s.alpha*fade})`;
+        ctx.fillStyle = `rgba(204,255,0,${s.alpha*fade})`;
+        ctx.lineWidth = s.lineW; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        style.draw(s); ctx.stroke();
+      });
+    }
+
+    demoLoop();
+  </script>
+</body>
+</html>
