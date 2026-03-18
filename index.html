@@ -381,7 +381,10 @@ async function startAudio(){
       document.getElementById('playBtn').textContent='Play';
       document.getElementById('playBtn').classList.remove('on');
       stopRecording();
-      setTimeout(showSum,800);
+      setTimeout(()=>{
+        if(betaDone){ showSum(); }
+        else{ document.getElementById('betaModal').classList.add('show'); }
+      },800);
     }
   };
 }
@@ -459,7 +462,9 @@ function submitBeta(){
   document.getElementById('betaOk').style.display='block';
   setTimeout(()=>{
     document.getElementById('betaModal').classList.remove('show');
-    startAudio();
+    // If song is over show summary, otherwise resume
+    if(!playing){ showSum(); }
+    else{ startAudio(); }
   },2000);
 }
 
@@ -475,13 +480,22 @@ function showSum(){
 }
 function fromSummary(){
   document.getElementById('sumModal').classList.remove('show');
-  if(betaDone){
-    triggerDownload();
-  } else {
-    document.getElementById('betaModal').classList.add('show');
-  }
+  triggerDownload();
 }
 function triggerDownload(){
+  // If recorder is still stopping, wait for onstop to finish
+  if(recorder && recorder.state !== 'inactive'){
+    recorder.onstop = () => {
+      isRecording = false;
+      doDownload();
+    };
+    recorder.stop();
+  } else {
+    doDownload();
+  }
+}
+
+function doDownload(){
   if(recChunks.length===0) return;
   const mime = recorder ? recorder.mimeType : 'video/webm';
   const blob = new Blob(recChunks, {type:mime});
@@ -490,7 +504,9 @@ function triggerDownload(){
   a.href = url;
   const title = document.getElementById('iTitle').value || document.getElementById('iBand').value || 'waveform';
   a.download = title.replace(/[^a-z0-9]/gi,'_').toLowerCase() + '.webm';
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 function closeSummary(){document.getElementById('sumModal').classList.remove('show');}
@@ -522,6 +538,7 @@ function startRecording(){
   recorder.onstop = () => {
     isRecording = false;
     try{ANA.disconnect(audioDest);}catch(e){}
+    // chunks are ready - download triggered by user action in summary
   };
 
   recorder.start(100); // collect data every 100ms
