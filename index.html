@@ -19,6 +19,7 @@
 html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;}
 #c{position:fixed;top:0;left:0;width:100%;height:100%;}
 #cursor{position:fixed;width:6px;height:6px;background:#CCFF00;border-radius:50%;pointer-events:none;z-index:999;transform:translate(-50%,-50%);mix-blend-mode:screen;}
+@media(hover:none){#cursor{display:none;}html,body{cursor:auto;}}
 
 /* MODALS */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
@@ -385,8 +386,8 @@ async function startAudio(){
   if(!BUF||!ACX) return;
   // Kill previous source
   if(SRC){try{SRC.onended=null;SRC.stop();SRC.disconnect();}catch(e){}SRC=null;}
-  // Await resume - critical after modal interaction
-  if(ACX.state==='suspended') await ACX.resume();
+  // Always resume — critical for iOS
+  try{ await ACX.resume(); }catch(e){}
   // Increment generation so stale onended callbacks are ignored
   const myGen = ++srcGen;
   // Fresh source node
@@ -423,10 +424,14 @@ function stopAudio(){
 // ─── CONTROLS ────────────────────────────────
 async function togglePlay(){
   if(!BUF) return;
-  if(playing){stopAudio();document.getElementById('playBtn').textContent='Play';document.getElementById('playBtn').classList.remove('on');}
-  else {
-    if(ACX && ACX.state==='suspended') await ACX.resume();
-    startAudio();
+  // iOS requires ACX resume on every direct user interaction
+  if(ACX && ACX.state==='suspended') await ACX.resume();
+  if(playing){
+    stopAudio();
+    document.getElementById('playBtn').textContent='Play';
+    document.getElementById('playBtn').classList.remove('on');
+  } else {
+    await startAudio();
   }
 }
 
@@ -587,6 +592,14 @@ function stopRecording(){
     recorder.stop();
   }
 }
+
+// ─── iOS AUDIO UNLOCK ─────────────────────────
+// One-time touch anywhere unlocks AudioContext on iOS
+function iosUnlock(){
+  if(ACX && ACX.state==='suspended') ACX.resume();
+  document.removeEventListener('touchstart', iosUnlock);
+}
+document.addEventListener('touchstart', iosUnlock, {passive:true});
 
 // ─── FILE LOAD ────────────────────────────────
 document.getElementById('fileInput').addEventListener('change',async e=>{
