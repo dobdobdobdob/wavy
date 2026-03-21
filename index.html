@@ -378,6 +378,7 @@ async function startAudio(){
   SRC=ACX.createBufferSource();
   SRC.buffer=BUF;
   SRC.connect(ANA);
+  ANA.connect(ACX.destination);
   SRC.start(0,poff);
   t0=ACX.currentTime-poff;
   playing=true;
@@ -441,8 +442,18 @@ function doClear(){window.location.reload();}
 
 // ─── MODALS ───────────────────────────────────
 function openInfo(){document.getElementById('infoModal').classList.add('show');setTimeout(()=>document.getElementById('iName').focus(),100);}
-function doContinue(){document.getElementById('infoModal').classList.remove('show');document.getElementById('fileInput').click();}
-function doSkipInfo(){document.getElementById('infoModal').classList.remove('show');document.getElementById('fileInput').click();}
+function doContinue(){
+  document.getElementById('infoModal').classList.remove('show');
+  if(!ACX){ ACX=new(window.AudioContext||window.webkitAudioContext)(); }
+  if(ACX.state==='suspended') ACX.resume();
+  document.getElementById('fileInput').click();
+}
+function doSkipInfo(){
+  document.getElementById('infoModal').classList.remove('show');
+  if(!ACX){ ACX=new(window.AudioContext||window.webkitAudioContext)(); }
+  if(ACX.state==='suspended') ACX.resume();
+  document.getElementById('fileInput').click();
+}
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('infoModal').classList.contains('show'))doContinue();});
 
 function skipBeta(){
@@ -548,6 +559,7 @@ document.getElementById('fileInput').addEventListener('change',async e=>{
   document.getElementById('upload').classList.add('hide');
 
   if(!ACX) ACX=new(window.AudioContext||window.webkitAudioContext)();
+  if(ACX.state==='suspended') await ACX.resume();
   if(ANA){try{ANA.disconnect();}catch(e){}}
   ANA=ACX.createAnalyser();ANA.fftSize=1024;
   ANA.connect(ACX.destination);
