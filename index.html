@@ -151,6 +151,8 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
 <!-- DEBUG: remove after testing -->
 <div id="dbg" style="position:fixed;top:10px;left:10px;z-index:9999;font-family:monospace;font-size:11px;color:#CCFF00;background:rgba(0,0,0,0.8);padding:8px;border-radius:4px;pointer-events:none;"></div>
 
+<canvas id="c"></canvas>
+
 <!-- HUD -->
 <div id="track" class="hud"></div>
 <div id="timer" class="hud"></div>
@@ -302,6 +304,8 @@ let suppress=false, srcGen=0;
 let recorder=null, recChunks=[], isRecording=false;
 let betaDone = localStorage.getItem('waveform_beta') === 'true';
 const COLS=['204,255,0','79,142,247','239,68,68','16,185,129','245,158,11','168,85,247'];
+const STYLES = ['basic','animals','flowers','intergalactic'];
+function resolveStyle(name){ return name==='random'?STYLES[Math.floor(Math.random()*STYLES.length)]:name; }
 
 // ─── DRAW ─────────────────────────────────────
 function tick(){
@@ -458,12 +462,6 @@ function doBurst(){
   }
   // Make sure burst is captured in recording
   if(!isRecording && BUF) startRecording();
-}
-
-const STYLES = ['basic','animals','flowers','intergalactic'];
-
-function resolveStyle(name){
-  return name === 'random' ? STYLES[Math.floor(Math.random()*STYLES.length)] : name;
 }
 
 function pickStyle(name,el){
