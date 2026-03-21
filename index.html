@@ -149,8 +149,6 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
   <input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.aac,.flac,.ogg,.aiff,.aif,.m4a,audio/mpeg,audio/wav,audio/aac,audio/flac,audio/ogg,audio/x-aiff,audio/x-m4a,audio/mp4">
 </div>
 
-<!-- DEBUG: remove after testing -->
-<div id="dbg" style="position:fixed;top:10px;left:10px;z-index:9999;font-family:monospace;font-size:11px;color:#CCFF00;background:rgba(0,0,0,0.8);padding:8px;border-radius:4px;pointer-events:none;"></div>
 
 <canvas id="c"></canvas>
 
@@ -485,13 +483,13 @@ function doContinue(){
   document.getElementById('infoModal').classList.remove('show');
   if(!ACX){ ACX=new(window.AudioContext||window.webkitAudioContext)(); }
   if(ACX.state==='suspended') ACX.resume();
-  document.getElementById('fileInput').click();
+  setTimeout(()=>document.getElementById('fileInput').click(), 50);
 }
 function doSkipInfo(){
   document.getElementById('infoModal').classList.remove('show');
   if(!ACX){ ACX=new(window.AudioContext||window.webkitAudioContext)(); }
   if(ACX.state==='suspended') ACX.resume();
-  document.getElementById('fileInput').click();
+  setTimeout(()=>document.getElementById('fileInput').click(), 50);
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('infoModal').classList.contains('show'))doContinue();});
 
@@ -540,12 +538,13 @@ function triggerDownload(){
 function doDownload(){
   if(recChunks.length===0) return;
   const mime = recorder ? recorder.mimeType : 'video/webm';
+  const ext = mime.includes('mp4') ? 'mp4' : 'webm';
   const blob = new Blob(recChunks, {type:mime});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   const title = document.getElementById('iTitle').value || document.getElementById('iBand').value || 'waveform';
-  a.download = title.replace(/[^a-z0-9]/gi,'_').toLowerCase() + '.webm';
+  a.download = title.replace(/[^a-z0-9]/gi,'_').toLowerCase() + '.' + ext;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -566,7 +565,13 @@ function startRecording(){
       ...canvasStream.getVideoTracks(),
       ...audioStream.getAudioTracks()
     ]);
-    const mime = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(m=>MediaRecorder.isTypeSupported(m)) || 'video/webm';
+    const mime = [
+      'video/mp4;codecs=avc1,mp4a',
+      'video/mp4',
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm'
+    ].find(m=>{ try{ return MediaRecorder.isTypeSupported(m); }catch(e){ return false; } }) || '';
     recorder = new MediaRecorder(combined, {mimeType:mime, videoBitsPerSecond:20000000});
     recorder._audioDest = audioDest;
     recorder.ondataavailable = e => { if(e.data.size>0) recChunks.push(e.data); };
@@ -586,12 +591,11 @@ function stopRecording(){
   }
 }
 
-function dbg(msg){const el=document.getElementById('dbg');if(el)el.innerHTML+=msg+'<br>';}
+function dbg(msg){ /* debug removed */ }
 
 // ─── iOS AUDIO UNLOCK ─────────────────────────
 function iosUnlock(){
-  if(ACX && ACX.state==='suspended'){ ACX.resume(); dbg('unlock: resumed'); }
-  else dbg('unlock: ACX='+(ACX?ACX.state:'null'));
+  if(ACX && ACX.state==='suspended') ACX.resume();
   document.removeEventListener('touchstart', iosUnlock);
 }
 document.addEventListener('touchstart', iosUnlock, {passive:true});
@@ -643,12 +647,14 @@ function thumb(el,sname){
   tc.fillStyle='#0e0e0e';tc.fillRect(0,0,TW,TH);
   const S=ST[sname],demo=[];
   for(let i=0;i<5;i++){const s=S.mk(TW*(.15+Math.random()*.7),TH*(.15+Math.random()*.7),.15);s.r=Math.min(s.r,Math.min(TW,TH)*.28);s.age=s.life*.3;demo.push(s);}
-  setInterval(()=>{
+  function drawThumb(){
     tc.fillStyle='rgba(14,14,14,0.3)';tc.fillRect(0,0,TW,TH);
     tc.save();tc.beginPath();tc.rect(0,0,TW,TH);tc.clip();
     demo.forEach(s=>{s.a+=s.sp*.5;s.x+=s.dx*.3;s.y+=s.dy*.3;if(s.x<0||s.x>TW)s.dx*=-1;if(s.y<0||s.y>TH)s.dy*=-1;tc.strokeStyle='rgba(204,255,0,0.65)';tc.fillStyle='rgba(204,255,0,0.65)';tc.lineWidth=.8;tc.lineCap='round';tc.lineJoin='round';S.dr(tc,s);tc.stroke();});
     tc.restore();
-  },50);
+    requestAnimationFrame(drawThumb);
+  }
+  requestAnimationFrame(drawThumb);
 }
 ['basic','animals','flowers','intergalactic'].forEach(n=>{const el=document.getElementById('th-'+n);if(el)thumb(el,n);});
 
@@ -658,23 +664,23 @@ function thumb(el,sname){
   if(!el)return;
   const tc=el.getContext('2d'),TW=el.width,TH=el.height;
   tc.fillStyle='#0e0e0e';tc.fillRect(0,0,TW,TH);
-  let demo=[];
-  let currentStyle=STYLES[0];
+  let demo=[],currentStyle=STYLES[0];
   function rebuildDemo(){
     currentStyle=STYLES[Math.floor(Math.random()*STYLES.length)];
-    const S=ST[currentStyle];
-    demo=[];
+    const S=ST[currentStyle];demo=[];
     for(let i=0;i<5;i++){const s=S.mk(TW*(.15+Math.random()*.7),TH*(.15+Math.random()*.7),.15);s.r=Math.min(s.r,Math.min(TW,TH)*.28);s.age=s.life*.3;demo.push(s);}
   }
   rebuildDemo();
   setInterval(rebuildDemo,1800);
-  setInterval(()=>{
+  function drawRandom(){
     tc.fillStyle='rgba(14,14,14,0.3)';tc.fillRect(0,0,TW,TH);
     tc.save();tc.beginPath();tc.rect(0,0,TW,TH);tc.clip();
     const S=ST[currentStyle];
     demo.forEach(s=>{s.a+=s.sp*.5;s.x+=s.dx*.3;s.y+=s.dy*.3;if(s.x<0||s.x>TW)s.dx*=-1;if(s.y<0||s.y>TH)s.dy*=-1;tc.strokeStyle='rgba(204,255,0,0.65)';tc.fillStyle='rgba(204,255,0,0.65)';tc.lineWidth=.8;tc.lineCap='round';tc.lineJoin='round';S.dr(tc,s);tc.stroke();});
     tc.restore();
-  },50);
+    requestAnimationFrame(drawRandom);
+  }
+  requestAnimationFrame(drawRandom);
 })();
 
 // Preload fonts so canvas can use them
