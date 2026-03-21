@@ -49,6 +49,9 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
 .email-btn{font-family:'DM Mono',monospace;font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;background:#CCFF00;color:#000;border:none;padding:.65rem 1.1rem;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .email-btn:hover{background:#fff;}
 .success-msg{font-family:'DM Mono',monospace;font-size:.72rem;color:#CCFF00;letter-spacing:.08em;display:none;margin-bottom:1rem;}
+.ftextarea{font-family:'DM Mono',monospace;font-size:.75rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:#fff;padding:.65rem .9rem;outline:none;width:100%;resize:none;height:110px;line-height:1.6;}
+.ftextarea:focus{border-color:rgba(204,255,0,.4);}
+.ftextarea::placeholder{color:rgba(255,255,255,.2);}
 .sum-rows{display:flex;flex-direction:column;margin-bottom:1.75rem;border:1px solid rgba(255,255,255,.07);}
 .sum-row{display:flex;justify-content:space-between;align-items:center;padding:.6rem .9rem;border-bottom:1px solid rgba(255,255,255,.05);}
 .sum-row:last-child{border-bottom:none;}
@@ -109,7 +112,7 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
 /* FOOTER */
 #site-footer{position:absolute;bottom:0;left:0;right:0;padding:.9rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;animation:fadeUp 1s 1.1s both;}
 .footer-links{display:flex;gap:1.5rem;list-style:none;padding:0;margin:0;}
-.footer-links a{font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.18);text-decoration:none;transition:color .2s;}
+.footer-links a{font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.18);text-decoration:none;transition:color .2s;cursor:pointer;}
 .footer-links a:hover{color:#CCFF00;}
 .footer-copy{font-family:'DM Mono',monospace;font-size:.52rem;letter-spacing:.08em;color:rgba(255,255,255,.1);}
 @media(max-width:600px){
@@ -159,6 +162,7 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
     <ul class="footer-links">
       <li><a href="faq.html">FAQ</a></li>
       <li><a href="terms.html">Terms</a></li>
+      <li><a onclick="openFeedback()">Feedback</a></li>
       <li><a href="mailto:hello@waveform.rocks">Contact</a></li>
     </ul>
     <p class="footer-copy">&copy; 2026 Waveform</p>
@@ -259,8 +263,28 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
   </div>
 </div>
 
-<script>
-// ─── PRIMITIVES ───────────────────────────────
+<!-- FEEDBACK MODAL -->
+<div class="modal" id="feedbackModal">
+  <div class="card">
+    <div class="card-title">Share your thoughts<span>.</span></div>
+    <p class="card-sub">What would make Waveform better? All feedback goes straight to the team.</p>
+    <div class="success-msg" id="feedbackOk">✓ Thanks — we really appreciate it!</div>
+    <div id="feedbackForm">
+      <div class="field">
+        <div class="field-header"><label class="flabel">Your Suggestion</label><span class="fcount" id="fc-fb">0/300</span></div>
+        <textarea class="ftextarea" id="feedbackText" maxlength="300" placeholder="I wish Waveform could..." oninput="fc('feedbackText','fc-fb',300)"></textarea>
+      </div>
+      <div class="field">
+        <label class="flabel">Email (optional)</label>
+        <input class="finput" id="feedbackEmail" type="email" placeholder="your@email.com">
+      </div>
+      <button class="btn-primary" onclick="submitFeedback()">Send Feedback</button>
+    </div>
+    <button class="btn-skip" onclick="closeFeedback()">Maybe later</button>
+  </div>
+</div>
+
+
 function poly(c,x,y,s,r,a){c.beginPath();for(let i=0;i<=s;i++){const ag=a+(i/s)*Math.PI*2;i?c.lineTo(x+Math.cos(ag)*r,y+Math.sin(ag)*r):c.moveTo(x+Math.cos(ag)*r,y+Math.sin(ag)*r);}c.closePath();}
 function line(c,x,y,r,a){c.beginPath();c.moveTo(x+Math.cos(a)*r,y+Math.sin(a)*r);c.lineTo(x-Math.cos(a)*r,y-Math.sin(a)*r);}
 function cross(c,x,y,r,a){line(c,x,y,r,a);c.moveTo(x+Math.cos(a+Math.PI/2)*r,y+Math.sin(a+Math.PI/2)*r);c.lineTo(x-Math.cos(a+Math.PI/2)*r,y-Math.sin(a+Math.PI/2)*r);}
@@ -567,6 +591,23 @@ function doDownload(){
   URL.revokeObjectURL(url);
 }
 function closeSummary(){document.getElementById('sumModal').classList.remove('show');}
+
+// ─── FEEDBACK ─────────────────────────────────
+function openFeedback(){document.getElementById('feedbackModal').classList.add('show');setTimeout(()=>document.getElementById('feedbackText').focus(),100);}
+function closeFeedback(){document.getElementById('feedbackModal').classList.remove('show');}
+function submitFeedback(){
+  const msg=document.getElementById('feedbackText').value.trim();
+  if(!msg){document.getElementById('feedbackText').style.borderColor='rgba(239,68,68,0.5)';return;}
+  const em=document.getElementById('feedbackEmail').value.trim();
+  fetch('https://waveform-email.thedobrien.workers.dev',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({type:'feedback',message:msg,email:em||'anonymous'})
+  }).catch(()=>{});
+  document.getElementById('feedbackForm').style.display='none';
+  document.getElementById('feedbackOk').style.display='block';
+  setTimeout(()=>closeFeedback(),2000);
+}
 
 // ─── RECORDING ────────────────────────────────
 function startRecording(){
