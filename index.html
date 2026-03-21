@@ -105,6 +105,13 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
 .wm-url{font-family:'DM Mono',monospace;font-size:.55rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.2);}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+
+/* FOOTER */
+#site-footer{position:absolute;bottom:0;left:0;right:0;padding:.9rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;animation:fadeUp 1s 1.1s both;}
+.footer-links{display:flex;gap:1.5rem;list-style:none;padding:0;margin:0;}
+.footer-links a{font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.18);text-decoration:none;transition:color .2s;}
+.footer-links a:hover{color:#CCFF00;}
+.footer-copy{font-family:'DM Mono',monospace;font-size:.52rem;letter-spacing:.08em;color:rgba(255,255,255,.1);}
 @media(max-width:600px){
   .style-picker{gap:.5rem;}
   .scard{width:72px;}
@@ -147,6 +154,15 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
   </div>
   <button class="upload-btn" onclick="openInfo()">Choose Audio File</button>
   <input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.aac,.flac,.ogg,.aiff,.aif,.m4a,audio/mpeg,audio/wav,audio/aac,audio/flac,audio/ogg,audio/x-aiff,audio/x-m4a,audio/mp4">
+
+  <footer id="site-footer">
+    <ul class="footer-links">
+      <li><a href="faq.html">FAQ</a></li>
+      <li><a href="terms.html">Terms</a></li>
+      <li><a href="mailto:hello@waveform.rocks">Contact</a></li>
+    </ul>
+    <p class="footer-copy">&copy; 2026 Waveform</p>
+  </footer>
 </div>
 
 
@@ -557,7 +573,10 @@ function startRecording(){
   if(!ACX||!ANA||isRecording) return;
   try {
     recChunks=[];
-    const canvasStream = canvas.captureStream(60);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const fps = isMobile ? 30 : 60;
+    const bitrate = isMobile ? 8000000 : 20000000;
+    const canvasStream = canvas.captureStream(fps);
     const audioDest = ACX.createMediaStreamDestination();
     ANA.connect(audioDest);
     const audioStream = audioDest.stream;
@@ -572,7 +591,7 @@ function startRecording(){
       'video/webm;codecs=vp8,opus',
       'video/webm'
     ].find(m=>{ try{ return MediaRecorder.isTypeSupported(m); }catch(e){ return false; } }) || '';
-    recorder = new MediaRecorder(combined, {mimeType:mime, videoBitsPerSecond:20000000});
+    recorder = new MediaRecorder(combined, {mimeType:mime, videoBitsPerSecond:bitrate});
     recorder._audioDest = audioDest;
     recorder.ondataavailable = e => { if(e.data.size>0) recChunks.push(e.data); };
     recorder.onstop = () => { isRecording = false; };
