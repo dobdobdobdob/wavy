@@ -138,6 +138,10 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
       <canvas id="th-intergalactic" width="70" height="50"></canvas>
       <div class="scard-label">Galactic</div>
     </div>
+    <div class="scard" data-style="random" onclick="pickStyle('random',this)">
+      <canvas id="th-random" width="70" height="50"></canvas>
+      <div class="scard-label">Random</div>
+    </div>
   </div>
   <button class="upload-btn" onclick="openInfo()">Choose Audio File</button>
   <input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.aac,.flac,.ogg,.aiff,.aif,.m4a,audio/mpeg,audio/wav,audio/aac,audio/flac,audio/ogg,audio/x-aiff,audio/x-m4a,audio/mp4">
@@ -172,6 +176,7 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
     <button class="spill" data-style="animals" onclick="pickStylePill('animals',this)">Animals</button>
     <button class="spill" data-style="flowers" onclick="pickStylePill('flowers',this)">Flowers</button>
     <button class="spill" data-style="intergalactic" onclick="pickStylePill('intergalactic',this)">Galactic</button>
+    <button class="spill" data-style="random" id="randomPill" onclick="pickStylePill('random',this)">Random</button>
   </div>
   <button class="cbtn" onclick="doClear()">Clear</button>
 </div>
@@ -355,11 +360,21 @@ function tick(){
     const t=s.age/s.life,fade=t<.15?t/.15:1-(t-.15)/.85,al=s.al*fade;
     const col=color?`rgba(${COLS[Math.floor(Math.random()*COLS.length)]},${al})`:`rgba(255,255,255,${al})`;
     ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=s.lw;ctx.lineCap='round';ctx.lineJoin='round';
-    ST[style].dr(ctx,s);ctx.stroke();
+    // Use the shape's own style type (stored at spawn time)
+    const stype = s._style || 'basic';
+    ST[stype].dr(ctx,s);ctx.stroke();
   });
 }
 
-function spawn(n=1,e=1){for(let i=0;i<n;i++)shapes.push(ST[style].mk(Math.random()*W,Math.random()*H,e));if(shapes.length>400)shapes.splice(0,shapes.length-400);}
+function spawn(n=1,e=1){
+  const s = resolveStyle(style);
+  for(let i=0;i<n;i++){
+    const shape = ST[s].mk(Math.random()*W,Math.random()*H,e);
+    shape._style = s;
+    shapes.push(shape);
+  }
+  if(shapes.length>400)shapes.splice(0,shapes.length-400);
+}
 
 // ─── AUDIO ENGINE ─────────────────────────────
 // Key rule: BufferSourceNode is one-use only.
@@ -406,10 +421,13 @@ function stopAudio(){
 }
 
 // ─── CONTROLS ────────────────────────────────
-function togglePlay(){
+async function togglePlay(){
   if(!BUF) return;
   if(playing){stopAudio();document.getElementById('playBtn').textContent='Play';document.getElementById('playBtn').classList.remove('on');}
-  else startAudio();
+  else {
+    if(ACX && ACX.state==='suspended') await ACX.resume();
+    startAudio();
+  }
 }
 
 function doRestart(){
@@ -424,15 +442,32 @@ function doRestart(){
 
 function toggleColor(){color=!color;document.getElementById('colorBtn').classList.toggle('on',color);}
 
-function doBurst(){for(let i=0;i<40;i++)shapes.push(ST[style].mk(mx+(Math.random()-.5)*200,my+(Math.random()-.5)*200,2));}
+function doBurst(){
+  const s = resolveStyle(style);
+  const bx = mx > 0 ? mx : W/2;
+  const by = my > 0 ? my : H/2;
+  for(let i=0;i<40;i++){
+    const shape = ST[s].mk(bx+(Math.random()-.5)*200,by+(Math.random()-.5)*200,2);
+    shape._style = s;
+    shapes.push(shape);
+  }
+  // Make sure burst is captured in recording
+  if(!isRecording && BUF) startRecording();
+}
+
+const STYLES = ['basic','animals','flowers','intergalactic'];
+
+function resolveStyle(name){
+  return name === 'random' ? STYLES[Math.floor(Math.random()*STYLES.length)] : name;
+}
 
 function pickStyle(name,el){
-  style=name;shapes=[];
+  style=name; shapes=[];
   document.querySelectorAll('.scard').forEach(c=>c.classList.toggle('on',c===el));
   document.querySelectorAll('.spill').forEach(p=>p.classList.toggle('on',p.dataset.style===name));
 }
 function pickStylePill(name,el){
-  style=name;shapes=[];
+  style=name; shapes=[];
   document.querySelectorAll('.spill').forEach(p=>p.classList.toggle('on',p===el));
   document.querySelectorAll('.scard').forEach(c=>c.classList.toggle('on',c.dataset.style===name));
 }
@@ -575,7 +610,9 @@ document.getElementById('fileInput').addEventListener('change',async e=>{
   },600);
 
   startRecording();
-  startAudio();
+  // Don't auto-play — user must tap Play (required for iOS audio policy)
+  document.getElementById('playBtn').textContent='Play';
+  document.getElementById('playBtn').classList.remove('on');
 });
 
 // ─── SEEK ────────────────────────────────────
@@ -605,6 +642,31 @@ function thumb(el,sname){
   },50);
 }
 ['basic','animals','flowers','intergalactic'].forEach(n=>{const el=document.getElementById('th-'+n);if(el)thumb(el,n);});
+
+// Random thumbnail — cycles through all 4 styles
+(function(){
+  const el=document.getElementById('th-random');
+  if(!el)return;
+  const tc=el.getContext('2d'),TW=el.width,TH=el.height;
+  tc.fillStyle='#0e0e0e';tc.fillRect(0,0,TW,TH);
+  let demo=[];
+  let currentStyle=STYLES[0];
+  function rebuildDemo(){
+    currentStyle=STYLES[Math.floor(Math.random()*STYLES.length)];
+    const S=ST[currentStyle];
+    demo=[];
+    for(let i=0;i<5;i++){const s=S.mk(TW*(.15+Math.random()*.7),TH*(.15+Math.random()*.7),.15);s.r=Math.min(s.r,Math.min(TW,TH)*.28);s.age=s.life*.3;demo.push(s);}
+  }
+  rebuildDemo();
+  setInterval(rebuildDemo,1800);
+  setInterval(()=>{
+    tc.fillStyle='rgba(14,14,14,0.3)';tc.fillRect(0,0,TW,TH);
+    tc.save();tc.beginPath();tc.rect(0,0,TW,TH);tc.clip();
+    const S=ST[currentStyle];
+    demo.forEach(s=>{s.a+=s.sp*.5;s.x+=s.dx*.3;s.y+=s.dy*.3;if(s.x<0||s.x>TW)s.dx*=-1;if(s.y<0||s.y>TH)s.dy*=-1;tc.strokeStyle='rgba(204,255,0,0.65)';tc.fillStyle='rgba(204,255,0,0.65)';tc.lineWidth=.8;tc.lineCap='round';tc.lineJoin='round';S.dr(tc,s);tc.stroke();});
+    tc.restore();
+  },50);
+})();
 
 // Preload fonts so canvas can use them
 document.fonts.ready.then(() => {
