@@ -285,6 +285,7 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
 </div>
 
 
+<script>
 function poly(c,x,y,s,r,a){c.beginPath();for(let i=0;i<=s;i++){const ag=a+(i/s)*Math.PI*2;i?c.lineTo(x+Math.cos(ag)*r,y+Math.sin(ag)*r):c.moveTo(x+Math.cos(ag)*r,y+Math.sin(ag)*r);}c.closePath();}
 function line(c,x,y,r,a){c.beginPath();c.moveTo(x+Math.cos(a)*r,y+Math.sin(a)*r);c.lineTo(x-Math.cos(a)*r,y-Math.sin(a)*r);}
 function cross(c,x,y,r,a){line(c,x,y,r,a);c.moveTo(x+Math.cos(a+Math.PI/2)*r,y+Math.sin(a+Math.PI/2)*r);c.lineTo(x-Math.cos(a+Math.PI/2)*r,y-Math.sin(a+Math.PI/2)*r);}
