@@ -148,7 +148,8 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
   <input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.aac,.flac,.ogg,.aiff,.aif,.m4a,audio/mpeg,audio/wav,audio/aac,audio/flac,audio/ogg,audio/x-aiff,audio/x-m4a,audio/mp4">
 </div>
 
-<canvas id="c"></canvas>
+<!-- DEBUG: remove after testing -->
+<div id="dbg" style="position:fixed;top:10px;left:10px;z-index:9999;font-family:monospace;font-size:11px;color:#CCFF00;background:rgba(0,0,0,0.8);padding:8px;border-radius:4px;pointer-events:none;"></div>
 
 <!-- HUD -->
 <div id="track" class="hud"></div>
@@ -383,11 +384,10 @@ function spawn(n=1,e=1){
 // ANA (analyser) persists across plays — only recreated on new file load.
 
 async function startAudio(){
-  if(!BUF||!ACX) return;
-  // Kill previous source
+  if(!BUF||!ACX) { dbg('startAudio: no BUF or ACX'); return; }
+  dbg('startAudio: ACX='+ACX.state);
   if(SRC){try{SRC.onended=null;SRC.stop();SRC.disconnect();}catch(e){}SRC=null;}
-  // Always resume — critical for iOS
-  try{ await ACX.resume(); }catch(e){}
+  try{ await ACX.resume(); dbg('after resume: '+ACX.state); }catch(e){ dbg('resume err:'+e); }
   // Increment generation so stale onended callbacks are ignored
   const myGen = ++srcGen;
   // Fresh source node
@@ -557,34 +557,28 @@ function closeSummary(){document.getElementById('sumModal').classList.remove('sh
 // ─── RECORDING ────────────────────────────────
 function startRecording(){
   if(!ACX||!ANA||isRecording) return;
-  recChunks=[];
-
-  // Canvas stream
-  const canvasStream = canvas.captureStream(60);
-
-  // Audio stream from analyser
-  const audioDest = ACX.createMediaStreamDestination();
-  ANA.connect(audioDest);
-  const audioStream = audioDest.stream;
-
-  // Combine canvas + audio
-  const combined = new MediaStream([
-    ...canvasStream.getVideoTracks(),
-    ...audioStream.getAudioTracks()
-  ]);
-
-  // Pick best supported format
-  const mime = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(m=>MediaRecorder.isTypeSupported(m)) || 'video/webm';
-
-  recorder = new MediaRecorder(combined, {mimeType:mime, videoBitsPerSecond:20000000});
-  recorder._audioDest = audioDest;
-  recorder.ondataavailable = e => { if(e.data.size>0) recChunks.push(e.data); };
-  recorder.onstop = () => {
+  try {
+    recChunks=[];
+    const canvasStream = canvas.captureStream(60);
+    const audioDest = ACX.createMediaStreamDestination();
+    ANA.connect(audioDest);
+    const audioStream = audioDest.stream;
+    const combined = new MediaStream([
+      ...canvasStream.getVideoTracks(),
+      ...audioStream.getAudioTracks()
+    ]);
+    const mime = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(m=>MediaRecorder.isTypeSupported(m)) || 'video/webm';
+    recorder = new MediaRecorder(combined, {mimeType:mime, videoBitsPerSecond:20000000});
+    recorder._audioDest = audioDest;
+    recorder.ondataavailable = e => { if(e.data.size>0) recChunks.push(e.data); };
+    recorder.onstop = () => { isRecording = false; };
+    recorder.start(100);
+    isRecording = true;
+  } catch(e) {
+    dbg('recording unavailable: '+e.message);
     isRecording = false;
-  };
-
-  recorder.start(100); // collect data every 100ms
-  isRecording = true;
+    recorder = null;
+  }
 }
 
 function stopRecording(){
@@ -593,10 +587,12 @@ function stopRecording(){
   }
 }
 
+function dbg(msg){const el=document.getElementById('dbg');if(el)el.innerHTML+=msg+'<br>';}
+
 // ─── iOS AUDIO UNLOCK ─────────────────────────
-// One-time touch anywhere unlocks AudioContext on iOS
 function iosUnlock(){
-  if(ACX && ACX.state==='suspended') ACX.resume();
+  if(ACX && ACX.state==='suspended'){ ACX.resume(); dbg('unlock: resumed'); }
+  else dbg('unlock: ACX='+(ACX?ACX.state:'null'));
   document.removeEventListener('touchstart', iosUnlock);
 }
 document.addEventListener('touchstart', iosUnlock, {passive:true});
@@ -607,6 +603,7 @@ document.getElementById('fileInput').addEventListener('change',async e=>{
   document.getElementById('upload').classList.add('hide');
 
   if(!ACX) ACX=new(window.AudioContext||window.webkitAudioContext)();
+  dbg('file loaded: ACX='+ACX.state);
   if(ACX.state==='suspended') await ACX.resume();
   if(ANA){try{ANA.disconnect();}catch(e){}}
   ANA=ACX.createAnalyser();ANA.fftSize=1024;
