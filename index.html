@@ -119,6 +119,17 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
 .cbtn:hover{color:#fff;border-color:rgba(255,255,255,.4);}
 .cbtn.on{color:#CCFF00;border-color:#CCFF00;}
 .cbtn.recording{color:#ff4444;border-color:#ff4444;}
+.logo-picker{display:none;position:absolute;bottom:calc(100% + 8px);left:0;background:#0e0e0e;border:1px solid rgba(255,255,255,.12);padding:.5rem;z-index:200;min-width:160px;}
+.logo-picker.show{display:block;}
+.logo-pick-title{font-family:'DM Mono',monospace;font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.25);padding:.2rem .4rem .5rem;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:.4rem;}
+.logo-pos-grid{display:grid;grid-template-columns:1fr 1fr;gap:.3rem;margin-bottom:.5rem;}
+.logo-pos-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.35);font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.35rem .5rem;cursor:pointer;transition:all .15s;text-align:center;}
+.logo-pos-btn:hover{color:#fff;border-color:rgba(255,255,255,.3);}
+.logo-pos-btn.on{color:#CCFF00;border-color:#CCFF00;background:rgba(204,255,0,.06);}
+.logo-upload-btn{display:block;width:100%;font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;background:#CCFF00;color:#000;border:none;padding:.45rem;cursor:pointer;margin-top:.2rem;}
+.logo-upload-btn:hover{background:#fff;}
+.logo-clear-btn{display:block;width:100%;font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;background:none;color:rgba(255,255,255,.2);border:none;padding:.35rem;cursor:pointer;margin-top:.2rem;text-decoration:underline;}
+.logo-clear-btn:hover{color:rgba(255,255,255,.5);}
 .palettes{display:flex;gap:.35rem;align-items:center;}
 .pal{width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .2s;flex-shrink:0;position:relative;}
 .pal:hover{transform:scale(1.2);}
@@ -251,6 +262,7 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
     <button class="cbtn on" id="themeBtn" onclick="toggleThemePicker()">Theme</button>
     <div id="themePicker" style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;background:#0e0e0e;border:1px solid rgba(255,255,255,.12);padding:.4rem;z-index:200;min-width:110px;">
       <button class="theme-opt" onclick="pickPalette('default')">Default</button>
+      <button class="theme-opt" onclick="pickPalette('bw')">B&W</button>
       <button class="theme-opt" onclick="pickPalette('tonka')">Tonka</button>
       <button class="theme-opt" onclick="pickPalette('lover')">Lover</button>
       <button class="theme-opt" onclick="pickPalette('acid')">Acid</button>
@@ -265,7 +277,33 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
     <button class="spill" data-style="intergalactic" onclick="pickStylePill('intergalactic',this)">Galactic</button>
     <button class="spill" data-style="random" id="randomPill" onclick="pickStylePill('random',this)">Random</button>
   </div>
+  <div style="position:relative;">
+    <button class="cbtn" id="logoBtn" onclick="toggleLogoPicker()">Logo</button>
+    <div class="logo-picker" id="logoPicker">
+      <div class="logo-pick-title">Quick Position</div>
+      <div class="logo-pos-grid">
+        <button class="logo-pos-btn" onclick="setLogoPos('tl',this)">↖ Top Left</button>
+        <button class="logo-pos-btn on" onclick="setLogoPos('tr',this)">↗ Top Right</button>
+        <button class="logo-pos-btn" onclick="setLogoPos('bl',this)">↙ Bot Left</button>
+        <button class="logo-pos-btn" onclick="setLogoPos('br',this)">↘ Bot Right</button>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:.54rem;letter-spacing:.1em;color:rgba(255,255,255,.2);padding:.4rem .2rem;text-align:center;border-top:1px solid rgba(255,255,255,.07);margin-top:.3rem;">or drag logo on screen</div>
+      <div style="padding:.5rem .2rem .2rem;">
+        <div style="font-family:'DM Mono',monospace;font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.25);margin-bottom:.35rem;display:flex;justify-content:space-between;"><span>Size</span><span id="logo-size-val">120px</span></div>
+        <input type="range" id="logo-size-slider" min="40" max="300" step="10" value="120" oninput="resizeLogo(this.value)" style="width:100%;-webkit-appearance:none;height:2px;background:rgba(255,255,255,.15);outline:none;border-radius:2px;">
+      </div>
+      <button class="logo-upload-btn" onclick="document.getElementById('logoInput').click()">Upload PNG</button>
+      <input type="file" id="logoInput" accept="image/png,image/svg+xml,image/*" style="display:none" onchange="loadLogo(this)">
+      <button class="logo-clear-btn" onclick="clearLogo()">Remove logo</button>
+    </div>
+  </div>
   <button class="cbtn" onclick="doClear()">Clear</button>
+</div>
+
+<!-- DRAGGABLE LOGO HANDLE -->
+<div id="logo-drag-handle" style="display:none;position:fixed;z-index:60;cursor:move;box-sizing:border-box;">
+  <img id="logo-drag-img" style="width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;">
+  <div style="position:absolute;bottom:-18px;left:0;right:0;font-family:'DM Mono',monospace;font-size:.48rem;letter-spacing:.1em;color:rgba(204,255,0,0.55);text-align:center;white-space:nowrap;">✥ drag to move</div>
 </div>
 
 <!-- INFO MODAL -->
@@ -465,14 +503,16 @@ let suppress=false, srcGen=0;
 let recorder=null, recChunks=[], isRecording=false;
 let betaDone = localStorage.getItem('waveform_beta') === 'true';
 let palette='default';
+let logoImg=null, logoX=0.78, logoY=0.04, logoSize=120; // normalized position + size
 const PALETTES={
   default: {cols:['255,255,255','204,255,0','255,255,255','180,255,80'],  bg:'8,8,8',        trail:'rgba(8,8,8,0.2)'},
+  bw:      {cols:['255,255,255','220,220,220','255,255,255','180,180,180'], bg:'8,8,8',       trail:'rgba(8,8,8,0.2)'},
   tonka:   {cols:['255,255,255','220,40,40','255,210,0','0,200,80'],      bg:'10,40,140',    trail:'rgba(10,40,140,0.25)'},
   lover:   {cols:['220,30,80','255,100,150','255,255,255','180,0,220'],   bg:'60,0,90',      trail:'rgba(60,0,90,0.22)'},
   acid:    {cols:['180,255,0','255,240,0','255,0,150','0,255,200'],       bg:'8,8,8',        trail:'rgba(8,8,8,0.18)'},
   glacier: {cols:['0,220,255','180,220,240','40,40,40','120,200,220'],    bg:'160,210,230',  trail:'rgba(160,210,230,0.28)'}
 };
-const PAL_NAMES={default:'Default',tonka:'Tonka',lover:'Lover',acid:'Acid',glacier:'Icy'};
+const PAL_NAMES={default:'Default',bw:'B&W',tonka:'Tonka',lover:'Lover',acid:'Acid',glacier:'Icy'};
 const STYLES = ['basic','animals','flowers','intergalactic'];
 function resolveStyle(name){ return name==='random'?STYLES[Math.floor(Math.random()*STYLES.length)]:name; }
 
@@ -526,6 +566,18 @@ function tick(){
     ctx.restore();
   }
 
+  // Draw user logo always — baked into recording and visible on canvas
+  if(logoImg){
+    const ratio = logoImg.naturalWidth / logoImg.naturalHeight;
+    const lw = logoSize;
+    const lh = Math.round(logoSize / ratio);
+    const lx = Math.round(logoX * W);
+    const ly = Math.round(logoY * H);
+    ctx.globalAlpha=0.9;
+    ctx.drawImage(logoImg, lx, ly, lw, lh);
+    ctx.globalAlpha=1;
+  }
+
   shapes.forEach(s=>{
     s.age+=.003+nrg*.007; s.a+=s.sp;
     const dx=s.x-mx,dy=s.y-my,d=Math.sqrt(dx*dx+dy*dy);
@@ -573,6 +625,7 @@ async function startAudio(){
   SRC.start(0,poff);
   t0=ACX.currentTime-poff;
   playing=true;
+  startRecording(); // only start recording when user hits Play
   const btn=document.getElementById('playBtn');
   btn.textContent='Record';
   btn.classList.remove('on');
@@ -604,13 +657,12 @@ async function togglePlay(){
   // iOS requires ACX resume on every direct user interaction
   if(ACX && ACX.state==='suspended') await ACX.resume();
   if(playing){
-    // Stop recording, reset to Play
     stopAudio();
     stopRecording();
-    recChunks=[];
     const btn=document.getElementById('playBtn');
     btn.textContent='Play';
     btn.classList.remove('on','recording');
+    setTimeout(()=>{ document.getElementById('betaModal').classList.add('show'); },800);
   } else {
     await startAudio();
   }
@@ -622,8 +674,7 @@ function doRestart(){
   stopAudio();
   recChunks=[];
   poff=0;shapes=[];
-  startRecording();
-  startAudio();
+  startAudio(); // startAudio calls startRecording internally
 }
 
 function toggleThemePicker(){
@@ -644,6 +695,7 @@ function pickPalette(name){
   ctx.fillStyle=`rgb(${P.bg})`;
   ctx.fillRect(0,0,W,H);
   shapes=[];
+  restartRecordingIfActive();
 }
 // Close theme picker if clicking outside
 document.addEventListener('click',e=>{
@@ -663,8 +715,8 @@ function doBurst(){
     shape._style = s;
     shapes.push(shape);
   }
-  // Make sure burst is captured in recording
-  if(!isRecording && BUF) startRecording();
+  // Only ensure recording if audio is already playing
+  if(!isRecording && playing) startRecording();
 }
 
 function pickStyle(name,el){
@@ -776,7 +828,143 @@ function shareWaveform(){
   }
 }
 
-// ─── DOWNLOAD COUNTER ─────────────────────────
+// ─── LOGO ─────────────────────────────────────
+const PAD = 32;
+
+function toggleLogoPicker(){
+  document.getElementById('logoPicker').classList.toggle('show');
+}
+
+function setLogoPos(preset, el){
+  if(!logoImg) return;
+  const ratio = logoImg.naturalWidth / logoImg.naturalHeight;
+  const lh = Math.round(logoSize / ratio);
+  if(preset==='tl'){ logoX=PAD/W; logoY=PAD/H; }
+  else if(preset==='tr'){ logoX=(W-logoSize-PAD)/W; logoY=PAD/H; }
+  else if(preset==='bl'){ logoX=PAD/W; logoY=(H-lh-90)/H; }
+  else { logoX=(W-logoSize-PAD)/W; logoY=(H-lh-90)/H; }
+  document.querySelectorAll('.logo-pos-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  updateDragHandle();
+}
+
+function resizeLogo(val){
+  logoSize = parseInt(val);
+  document.getElementById('logo-size-val').textContent = val+'px';
+  updateDragHandle();
+}
+
+function loadLogo(input){
+  const file = input.files[0]; if(!file) return;
+  // Clear old logo immediately so canvas stops drawing it while new one loads
+  logoImg = null;
+  const img = new Image();
+  img.onload = () => {
+    logoImg = img;
+    logoX = (W - logoSize - PAD) / W;
+    logoY = PAD / H;
+    document.getElementById('logo-drag-img').src = img.src;
+    document.getElementById('logoBtn').classList.add('on');
+    document.getElementById('logoPicker').classList.remove('show');
+    // Reset file input so same file can be re-uploaded
+    input.value = '';
+    showDragHandle();
+    restartRecordingIfActive();
+    toast('Logo added — drag to reposition');
+  };
+  img.onerror = () => toast('Could not load image — use PNG or SVG');
+  img.src = URL.createObjectURL(file);
+}
+
+function clearLogo(){
+  logoImg = null;
+  document.getElementById('logoBtn').classList.remove('on');
+  document.getElementById('logoInput').value = '';
+  document.getElementById('logoPicker').classList.remove('show');
+  document.getElementById('logo-drag-handle').style.display='none';
+  restartRecordingIfActive();
+  toast('Logo removed');
+}
+
+// ─── RESTART RECORDING ────────────────────────
+// Called whenever theme or logo changes mid-session
+// Uses onstop callback to chain restart cleanly (stop is async)
+function restartRecordingIfActive(){
+  // Only restart if audio is actually playing — don't record during setup
+  if(!playing || !recorder || recorder.state==='inactive') return;
+  recChunks = [];
+  recorder.onstop = () => {
+    isRecording = false;
+    startRecording();
+  };
+  try { recorder.stop(); } catch(e) {}
+}
+
+// ─── DRAG HANDLE ──────────────────────────────
+function showDragHandle(){
+  updateDragHandle();
+  document.getElementById('logo-drag-handle').style.display='block';
+}
+
+function updateDragHandle(){
+  if(!logoImg) return;
+  const handle = document.getElementById('logo-drag-handle');
+  const ratio = logoImg.naturalWidth / logoImg.naturalHeight;
+  const lh = Math.round(logoSize / ratio);
+  handle.style.width = logoSize + 'px';
+  handle.style.height = lh + 'px';
+  handle.style.left = Math.round(logoX * W) + 'px';
+  handle.style.top = Math.round(logoY * H) + 'px';
+}
+
+// Drag logic
+(function(){
+  let dragging=false, startX=0, startY=0, startLogoX=0, startLogoY=0;
+
+  function onDown(e){
+    if(!logoImg) return;
+    dragging=true;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    startX=cx; startY=cy;
+    startLogoX=logoX; startLogoY=logoY;
+    e.preventDefault();
+  }
+
+  function onMove(e){
+    if(!dragging) return;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    const dx = cx - startX;
+    const dy = cy - startY;
+    const ratio = logoImg.naturalWidth / logoImg.naturalHeight;
+    const lh = Math.round(logoSize / ratio);
+    logoX = Math.max(0, Math.min((W - logoSize) / W, startLogoX + dx / W));
+    logoY = Math.max(0, Math.min((H - lh) / H, startLogoY + dy / H));
+    updateDragHandle();
+    document.querySelectorAll('.logo-pos-btn').forEach(b=>b.classList.remove('on'));
+    e.preventDefault();
+  }
+
+  function onUp(){ dragging=false; }
+
+  const handle = document.getElementById('logo-drag-handle');
+  handle.addEventListener('mousedown', onDown);
+  handle.addEventListener('touchstart', onDown, {passive:false});
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, {passive:false});
+  document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchend', onUp);
+})();
+
+// Close logo picker when clicking outside
+document.addEventListener('click', e=>{
+  const picker = document.getElementById('logoPicker');
+  const btn = document.getElementById('logoBtn');
+  if(picker && !picker.contains(e.target) && e.target!==btn){
+    picker.classList.remove('show');
+  }
+});
 function formatCount(n){
   if(n>=1000) return n.toLocaleString();
   return n.toString();
@@ -919,13 +1107,11 @@ document.getElementById('fileInput').addEventListener('change',async e=>{
   setTimeout(()=>{
     document.getElementById('controls').classList.add('show');
     ['track','timer','prog'].forEach(id=>{const el=document.getElementById(id);el.classList.add('show');});
-    // watermarks drawn on canvas directly - no HTML overlays needed
     document.getElementById('track').textContent=file.name.replace(/\.[^/.]+$/,'').toUpperCase();
     openTut();
   },600);
 
-  startRecording();
-  // Don't auto-play — user must tap Play (required for iOS audio policy)
+  // Don't start recording until user hits Play
   const btn=document.getElementById('playBtn');
   btn.textContent='Play';
   btn.classList.remove('on','recording');
