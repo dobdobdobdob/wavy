@@ -52,6 +52,18 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
 .ftextarea{font-family:'DM Mono',monospace;font-size:.75rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:#fff;padding:.65rem .9rem;outline:none;width:100%;resize:none;height:110px;line-height:1.6;}
 .ftextarea:focus{border-color:rgba(204,255,0,.4);}
 .ftextarea::placeholder{color:rgba(255,255,255,.2);}
+.tut-steps{display:flex;gap:.35rem;margin-bottom:1.6rem;}
+.tut-dot{width:20px;height:2px;background:rgba(255,255,255,.1);transition:background .3s;cursor:pointer;}
+.tut-dot.on{background:#CCFF00;}
+.tut-slide{display:none;}
+.tut-slide.on{display:block;}
+.tut-icon{font-size:1.6rem;margin-bottom:.7rem;}
+.tut-nav{display:flex;justify-content:space-between;align-items:center;margin-top:1.4rem;}
+.btn-tut-next{font-family:'DM Mono',monospace;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;background:#CCFF00;color:#000;border:none;padding:.65rem 1.4rem;cursor:pointer;}
+.btn-tut-next:hover{background:#fff;}
+.btn-tut-skip{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.1em;color:rgba(255,255,255,.2);background:none;border:none;cursor:pointer;text-decoration:underline;}
+.btn-tut-skip:hover{color:rgba(255,255,255,.5);}
+.tut-counter{font-family:'DM Mono',monospace;font-size:.58rem;color:rgba(255,255,255,.2);letter-spacing:.1em;}
 .sum-rows{display:flex;flex-direction:column;margin-bottom:1.75rem;border:1px solid rgba(255,255,255,.07);}
 .sum-row{display:flex;justify-content:space-between;align-items:center;padding:.6rem .9rem;border-bottom:1px solid rgba(255,255,255,.05);}
 .sum-row:last-child{border-bottom:none;}
@@ -82,6 +94,7 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
 .cbtn{font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);background:none;border:1px solid rgba(255,255,255,.1);padding:.4rem .9rem;cursor:pointer;transition:all .2s;}
 .cbtn:hover{color:#fff;border-color:rgba(255,255,255,.4);}
 .cbtn.on{color:#CCFF00;border-color:#CCFF00;}
+.cbtn.recording{color:#ff4444;border-color:#ff4444;}
 .spills{display:flex;gap:.4rem;}
 .spill{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.25);background:none;border:1px solid rgba(255,255,255,.07);padding:.35rem .7rem;cursor:pointer;border-radius:100px;transition:all .2s;}
 .spill:hover{color:rgba(255,255,255,.6);}
@@ -111,6 +124,10 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
 
 /* FOOTER */
 #site-footer{position:absolute;bottom:0;left:0;right:0;padding:.9rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;animation:fadeUp 1s 1.1s both;}
+
+/* COUNTER */
+#dl-counter{font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.12em;color:rgba(255,255,255,.2);text-transform:uppercase;animation:fadeUp 1s .95s both;}
+#dl-counter span{color:#CCFF00;}
 .footer-links{display:flex;gap:1.5rem;list-style:none;padding:0;margin:0;}
 .footer-links a{font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.18);text-decoration:none;transition:color .2s;cursor:pointer;}
 .footer-links a:hover{color:#CCFF00;}
@@ -156,6 +173,7 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
     </div>
   </div>
   <button class="upload-btn" onclick="openInfo()">Choose Audio File</button>
+  <div id="dl-counter">loading...</div>
   <input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.aac,.flac,.ogg,.aiff,.aif,.m4a,audio/mpeg,audio/wav,audio/aac,audio/flac,audio/ogg,audio/x-aiff,audio/x-m4a,audio/mp4">
 
   <footer id="site-footer">
@@ -260,6 +278,44 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
     </div>
     <button class="btn-primary" onclick="fromSummary()">Download My Video</button>
     <button class="btn-skip" onclick="closeSummary()">Keep previewing for free</button>
+  </div>
+</div>
+
+<!-- TUTORIAL MODAL -->
+<div class="modal" id="tutModal">
+  <div class="card">
+    <div class="card-title">How it works<span>.</span></div>
+    <div class="tut-steps">
+      <div class="tut-dot on" onclick="goTut(0)"></div>
+      <div class="tut-dot" onclick="goTut(1)"></div>
+      <div class="tut-dot" onclick="goTut(2)"></div>
+      <div class="tut-dot" onclick="goTut(3)"></div>
+    </div>
+
+    <div class="tut-slide on" id="tut-0">
+      <div class="tut-icon">▶</div>
+      <div class="card-sub" style="margin-bottom:0">Hit <strong style="color:#fff">Play</strong> to start your track. Waveform listens to your audio in real time and generates visuals as it plays. Recording starts automatically — just let it run.</div>
+    </div>
+    <div class="tut-slide" id="tut-1">
+      <div class="tut-icon">◈</div>
+      <div class="card-sub" style="margin-bottom:0">Switch between <strong style="color:#fff">Basic, Animals, Flowers, Galactic</strong> or <strong style="color:#fff">Random</strong> using the style pills at the bottom. Change anytime — each style reacts differently to your music.</div>
+    </div>
+    <div class="tut-slide" id="tut-2">
+      <div class="tut-icon">⚡</div>
+      <div class="card-sub" style="margin-bottom:0"><strong style="color:#fff">Color</strong> toggles a colour palette on and off. <strong style="color:#fff">Burst</strong> fires a burst of shapes from the center — great for drops. <strong style="color:#fff">Clear</strong> wipes the canvas and starts fresh.</div>
+    </div>
+    <div class="tut-slide" id="tut-3">
+      <div class="tut-icon">↓</div>
+      <div class="card-sub" style="margin-bottom:0">When you're done, stop the track and you'll be prompted to <strong style="color:#fff">download your video</strong>. It's ready to post on TikTok, Instagram Reels, YouTube Shorts, or Spotify Canvas.</div>
+    </div>
+
+    <div class="tut-nav">
+      <span class="tut-counter" id="tut-count">1 / 4</span>
+      <div style="display:flex;align-items:center;gap:1rem;">
+        <button class="btn-tut-skip" onclick="closeTut()">Skip</button>
+        <button class="btn-tut-next" id="tut-btn" onclick="nextTut()">Next →</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -442,14 +498,16 @@ async function startAudio(){
   SRC.start(0,poff);
   t0=ACX.currentTime-poff;
   playing=true;
-  document.getElementById('playBtn').textContent='Pause';
-  document.getElementById('playBtn').classList.add('on');
+  const btn=document.getElementById('playBtn');
+  btn.textContent='Record';
+  btn.classList.remove('on');
+  btn.classList.add('recording');
   SRC.onended=()=>{
     if(myGen!==srcGen) return;
     if(playing){
       playing=false;poff=0;
       document.getElementById('playBtn').textContent='Play';
-      document.getElementById('playBtn').classList.remove('on');
+      document.getElementById('playBtn').classList.remove('on','recording');
       stopRecording();
       setTimeout(()=>{ document.getElementById('betaModal').classList.add('show'); },800);
     }
@@ -471,9 +529,13 @@ async function togglePlay(){
   // iOS requires ACX resume on every direct user interaction
   if(ACX && ACX.state==='suspended') await ACX.resume();
   if(playing){
+    // Stop recording, reset to Play
     stopAudio();
-    document.getElementById('playBtn').textContent='Play';
-    document.getElementById('playBtn').classList.remove('on');
+    stopRecording();
+    recChunks=[];
+    const btn=document.getElementById('playBtn');
+    btn.textContent='Play';
+    btn.classList.remove('on','recording');
   } else {
     await startAudio();
   }
@@ -590,10 +652,59 @@ function doDownload(){
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  incrementCount();
 }
 function closeSummary(){document.getElementById('sumModal').classList.remove('show');}
 
-// ─── FEEDBACK ─────────────────────────────────
+// ─── DOWNLOAD COUNTER ─────────────────────────
+function formatCount(n){
+  if(n>=1000) return n.toLocaleString();
+  return n.toString();
+}
+function loadCount(){
+  fetch('https://waveform-email.thedobrien.workers.dev/count')
+    .then(r=>r.json())
+    .then(d=>{
+      const el=document.getElementById('dl-counter');
+      if(el) el.innerHTML=`<span>${formatCount(d.count)}</span> videos created`;
+    })
+    .catch(()=>{
+      const el=document.getElementById('dl-counter');
+      if(el) el.style.display='none';
+    });
+}
+function incrementCount(){
+  fetch('https://waveform-email.thedobrien.workers.dev',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({type:'download'})
+  }).catch(()=>{});
+}
+loadCount();
+let tutStep=0;
+const TUT_TOTAL=4;
+function openTut(){
+  if(localStorage.getItem('wf_tut_done')) return;
+  tutStep=0;renderTut();
+  document.getElementById('tutModal').classList.add('show');
+}
+function closeTut(){
+  document.getElementById('tutModal').classList.remove('show');
+  localStorage.setItem('wf_tut_done','1');
+}
+function nextTut(){
+  if(tutStep<TUT_TOTAL-1){tutStep++;renderTut();}
+  else{closeTut();}
+}
+function goTut(n){tutStep=n;renderTut();}
+function renderTut(){
+  for(let i=0;i<TUT_TOTAL;i++){
+    document.getElementById('tut-'+i).classList.toggle('on',i===tutStep);
+    document.querySelectorAll('.tut-dot')[i].classList.toggle('on',i===tutStep);
+  }
+  document.getElementById('tut-count').textContent=(tutStep+1)+' / '+TUT_TOTAL;
+  document.getElementById('tut-btn').textContent=tutStep===TUT_TOTAL-1?"Let's go →":'Next →';
+}
 function openFeedback(){document.getElementById('feedbackModal').classList.add('show');setTimeout(()=>document.getElementById('feedbackText').focus(),100);}
 function closeFeedback(){document.getElementById('feedbackModal').classList.remove('show');}
 function submitFeedback(){
@@ -681,12 +792,14 @@ document.getElementById('fileInput').addEventListener('change',async e=>{
     ['track','timer','prog'].forEach(id=>{const el=document.getElementById(id);el.classList.add('show');});
     // watermarks drawn on canvas directly - no HTML overlays needed
     document.getElementById('track').textContent=file.name.replace(/\.[^/.]+$/,'').toUpperCase();
+    openTut();
   },600);
 
   startRecording();
   // Don't auto-play — user must tap Play (required for iOS audio policy)
-  document.getElementById('playBtn').textContent='Play';
-  document.getElementById('playBtn').classList.remove('on');
+  const btn=document.getElementById('playBtn');
+  btn.textContent='Play';
+  btn.classList.remove('on','recording');
 });
 
 // ─── SEEK ────────────────────────────────────
