@@ -119,6 +119,19 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
 .cbtn:hover{color:#fff;border-color:rgba(255,255,255,.4);}
 .cbtn.on{color:#CCFF00;border-color:#CCFF00;}
 .cbtn.recording{color:#ff4444;border-color:#ff4444;}
+.palettes{display:flex;gap:.35rem;align-items:center;}
+.pal{width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .2s;flex-shrink:0;position:relative;}
+.pal:hover{transform:scale(1.2);}
+.pal.on{border-color:#fff;transform:scale(1.15);}
+.pal-default{background:conic-gradient(#fff 0% 50%,#CCFF00 50% 100%);}
+.pal-tonka{background:conic-gradient(#1e64ff 0% 25%,#dc2828 25% 50%,#ffd200 50% 75%,#00c850 75% 100%);}
+.pal-lover{background:conic-gradient(#dc1e50 0% 33%,#ff6496 33% 66%,#fff 66% 100%);}
+.pal-acid{background:conic-gradient(#b4ff00 0% 25%,#fff000 25% 50%,#ff0096 50% 75%,#00ffc8 75% 100%);}
+.pal-glacier{background:conic-gradient(#64c8ff 0% 33%,#00dcff 33% 66%,#a0c8dc 66% 100%);}
+.pal-label{font-family:'DM Mono',monospace;font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.25);min-width:40px;}
+.theme-opt{display:block;width:100%;background:none;border:none;padding:.45rem .7rem;font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);cursor:pointer;text-align:left;transition:color .15s,background .15s;}
+.theme-opt:hover{color:#CCFF00;background:rgba(204,255,0,.06);}
+.theme-opt.active{color:#CCFF00;}
 .spills{display:flex;gap:.4rem;}
 .spill{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.25);background:none;border:1px solid rgba(255,255,255,.07);padding:.35rem .7rem;cursor:pointer;border-radius:100px;transition:all .2s;}
 .spill:hover{color:rgba(255,255,255,.6);}
@@ -234,7 +247,16 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
 <div id="controls">
   <button class="cbtn" id="playBtn" onclick="togglePlay()">Play</button>
   <button class="cbtn" onclick="doRestart()">Restart</button>
-  <button class="cbtn" id="colorBtn" onclick="toggleColor()">Color</button>
+  <div style="position:relative;">
+    <button class="cbtn on" id="themeBtn" onclick="toggleThemePicker()">Theme</button>
+    <div id="themePicker" style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;background:#0e0e0e;border:1px solid rgba(255,255,255,.12);padding:.4rem;z-index:200;min-width:110px;">
+      <button class="theme-opt" onclick="pickPalette('default')">Default</button>
+      <button class="theme-opt" onclick="pickPalette('tonka')">Tonka</button>
+      <button class="theme-opt" onclick="pickPalette('lover')">Lover</button>
+      <button class="theme-opt" onclick="pickPalette('acid')">Acid</button>
+      <button class="theme-opt" onclick="pickPalette('glacier')">Icy</button>
+    </div>
+  </div>
   <button class="cbtn" onclick="doBurst()">Burst</button>
   <div class="spills">
     <button class="spill on" data-style="basic" onclick="pickStylePill('basic',this)">Basic</button>
@@ -297,7 +319,7 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
       <div class="sum-row"><span class="sum-label">Artist</span><span class="sum-value" id="s-artist">—</span></div>
       <div class="sum-row"><span class="sum-label">Your Name</span><span class="sum-value" id="s-name">—</span></div>
       <div class="sum-row"><span class="sum-label">Filter</span><span class="sum-value hi" id="s-filter">Basic</span></div>
-      <div class="sum-row"><span class="sum-label">Color Mode</span><span class="sum-value hi" id="s-color">Off</span></div>
+      <div class="sum-row"><span class="sum-label">Palette</span><span class="sum-value hi" id="s-color">Default</span></div>
       <div class="sum-row"><span class="sum-label">Track</span><span class="sum-value" id="s-track">—</span></div>
     </div>
     <button class="btn-primary" onclick="fromSummary()">Download My Video</button>
@@ -436,20 +458,29 @@ window.addEventListener('resize',resize);resize();
 document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.left=mx+'px';cursor.style.top=my+'px';});
 
 // ─── APP STATE ────────────────────────────────
-let style='basic', color=false, shapes=[], fid=null;
+let style='basic', shapes=[], fid=null;
 let ACX=null, ANA=null, SRC=null, BUF=null;
 let playing=false, t0=0, poff=0, dur=0, nrg=0;
 let suppress=false, srcGen=0;
 let recorder=null, recChunks=[], isRecording=false;
 let betaDone = localStorage.getItem('waveform_beta') === 'true';
-const COLS=['204,255,0','79,142,247','239,68,68','16,185,129','245,158,11','168,85,247'];
+let palette='default';
+const PALETTES={
+  default: {cols:['255,255,255','204,255,0','255,255,255','180,255,80'],  bg:'8,8,8',        trail:'rgba(8,8,8,0.2)'},
+  tonka:   {cols:['255,255,255','220,40,40','255,210,0','0,200,80'],      bg:'10,40,140',    trail:'rgba(10,40,140,0.25)'},
+  lover:   {cols:['220,30,80','255,100,150','255,255,255','180,0,220'],   bg:'60,0,90',      trail:'rgba(60,0,90,0.22)'},
+  acid:    {cols:['180,255,0','255,240,0','255,0,150','0,255,200'],       bg:'8,8,8',        trail:'rgba(8,8,8,0.18)'},
+  glacier: {cols:['0,220,255','180,220,240','40,40,40','120,200,220'],    bg:'160,210,230',  trail:'rgba(160,210,230,0.28)'}
+};
+const PAL_NAMES={default:'Default',tonka:'Tonka',lover:'Lover',acid:'Acid',glacier:'Icy'};
 const STYLES = ['basic','animals','flowers','intergalactic'];
 function resolveStyle(name){ return name==='random'?STYLES[Math.floor(Math.random()*STYLES.length)]:name; }
 
 // ─── DRAW ─────────────────────────────────────
 function tick(){
   fid=requestAnimationFrame(tick);
-  ctx.fillStyle='rgba(8,8,8,0.2)';ctx.fillRect(0,0,W,H);
+  const P=PALETTES[palette];
+  ctx.fillStyle=P.trail;ctx.fillRect(0,0,W,H);
   if(ANA&&playing){
     const fa=new Uint8Array(ANA.frequencyBinCount);ANA.getByteFrequencyData(fa);
     nrg=fa.slice(0,60).reduce((a,b)=>a+b,0)/60/255;
@@ -503,7 +534,8 @@ function tick(){
     if(s.x<-150)s.x=W+150;if(s.x>W+150)s.x=-150;
     if(s.y<-150)s.y=H+150;if(s.y>H+150)s.y=-150;
     const t=s.age/s.life,fade=t<.15?t/.15:1-(t-.15)/.85,al=s.al*fade;
-    const col=color?`rgba(${COLS[Math.floor(Math.random()*COLS.length)]},${al})`:`rgba(255,255,255,${al})`;
+    const COLS=PALETTES[palette].cols;
+    const col=`rgba(${COLS[Math.floor(Math.random()*COLS.length)]},${al})`;
     ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=s.lw;ctx.lineCap='round';ctx.lineJoin='round';
     // Use the shape's own style type (stored at spawn time)
     const stype = s._style || 'basic';
@@ -594,7 +626,33 @@ function doRestart(){
   startAudio();
 }
 
-function toggleColor(){color=!color;document.getElementById('colorBtn').classList.toggle('on',color);}
+function toggleThemePicker(){
+  const p=document.getElementById('themePicker');
+  p.style.display=p.style.display==='none'?'block':'none';
+}
+function pickPalette(name){
+  palette=name;
+  // Update button
+  const btn=document.getElementById('themeBtn');
+  btn.textContent=PAL_NAMES[name];
+  // Close picker
+  document.getElementById('themePicker').style.display='none';
+  // Mark active option
+  document.querySelectorAll('.theme-opt').forEach(o=>o.classList.toggle('active',o.textContent.toLowerCase()===name));
+  // Flush canvas
+  const P=PALETTES[name];
+  ctx.fillStyle=`rgb(${P.bg})`;
+  ctx.fillRect(0,0,W,H);
+  shapes=[];
+}
+// Close theme picker if clicking outside
+document.addEventListener('click',e=>{
+  const picker=document.getElementById('themePicker');
+  const btn=document.getElementById('themeBtn');
+  if(picker && !picker.contains(e.target) && e.target!==btn){
+    picker.style.display='none';
+  }
+});
 
 function doBurst(){
   const s = resolveStyle(style);
@@ -668,8 +726,8 @@ function showSum(){
   document.getElementById('s-title').textContent=document.getElementById('iTitle').value||'—';
   document.getElementById('s-artist').textContent=document.getElementById('iBand').value||'—';
   document.getElementById('s-name').textContent=document.getElementById('iName').value||'—';
-  document.getElementById('s-filter').textContent=SL[style];
-  document.getElementById('s-color').textContent=color?'On':'Off';
+  document.getElementById('s-filter').textContent=SL[style]||style;
+  document.getElementById('s-color').textContent=PAL_NAMES[palette]||palette;
   document.getElementById('s-track').textContent=document.getElementById('track').textContent||'—';
   document.getElementById('sumModal').classList.add('show');
 }
@@ -938,6 +996,10 @@ document.fonts.ready.then(() => {
   ctx.font = "400 14px 'DM Mono', monospace";
   ctx.fillText('x', 0, 0);
   ctx.restore();
+  // Seed background
+  const P=PALETTES[palette];
+  ctx.fillStyle=`rgb(${P.bg})`;
+  ctx.fillRect(0,0,W,H);
   tick();
 });
 </script>
