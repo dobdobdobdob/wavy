@@ -5,6 +5,14 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 
+<!-- SEO -->
+<meta name="description" content="Waveform transforms any music track into downloadable geometric video art. Free. No account needed. Works on TikTok, Instagram, YouTube Shorts and Spotify Canvas.">
+<meta name="keywords" content="audio visualizer, music visualizer, waveform, video art, TikTok music video, Instagram reels, Spotify canvas, independent artist, music video generator">
+<link rel="canonical" href="https://waveform.rocks">
+
+<!-- Google Search Console -->
+<meta name="google-site-verification" content="GT-TBW29MVF">
+
 <!-- Open Graph / Social Preview -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://waveform.rocks">
@@ -293,6 +301,7 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
       <div class="sum-row"><span class="sum-label">Track</span><span class="sum-value" id="s-track">—</span></div>
     </div>
     <button class="btn-primary" onclick="fromSummary()">Download My Video</button>
+    <button class="btn-primary" style="margin-top:.5rem;background:transparent;border:1px solid rgba(204,255,0,.4);color:#CCFF00;" onclick="shareWaveform()">Share Waveform ↗</button>
     <button class="btn-skip" onclick="closeSummary()">Keep previewing for free</button>
   </div>
 </div>
@@ -689,6 +698,25 @@ function doDownload(){
   incrementCount();
 }
 function closeSummary(){document.getElementById('sumModal').classList.remove('show');}
+
+// ─── SHARE ────────────────────────────────────
+function shareWaveform(){
+  if(navigator.share){
+    navigator.share({
+      title:'Waveform',
+      text:'Turn your music into visual art — free.',
+      url:'https://waveform.rocks'
+    }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText('https://waveform.rocks').then(()=>{
+      const btn=event.target;
+      btn.textContent='Link Copied ✓';
+      setTimeout(()=>btn.textContent='Share Waveform ↗',2000);
+    }).catch(()=>{
+      window.open('https://waveform.rocks','_blank');
+    });
+  }
+}
 
 // ─── DOWNLOAD COUNTER ─────────────────────────
 function formatCount(n){
