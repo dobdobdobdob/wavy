@@ -4,6 +4,22 @@
 <head>
 <meta charset="UTF-8">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+<!-- Open Graph / Social Preview -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://waveform.rocks">
+<meta property="og:title" content="Waveform — Upload a Track and Watch It Come Alive">
+<meta property="og:description" content="Transform any music track into downloadable geometric video art. Free. No account needed.">
+<meta property="og:image" content="https://waveform.rocks/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://waveform.rocks">
+<meta name="twitter:title" content="Waveform — Upload a Track and Watch It Come Alive">
+<meta name="twitter:description" content="Transform any music track into downloadable geometric video art. Free. No account needed.">
+<meta name="twitter:image" content="https://waveform.rocks/og-image.png">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-0B38E3L84L"></script>
 <script>
@@ -316,6 +332,24 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
         <button class="btn-tut-next" id="tut-btn" onclick="nextTut()">Next →</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- FORMAT ERROR MODAL -->
+<div class="modal" id="fmtModal">
+  <div class="card">
+    <div class="card-title">Unsupported format<span>.</span></div>
+    <p class="card-sub">This file couldn't be decoded by your browser. Waveform supports the following formats:</p>
+    <div class="sum-rows">
+      <div class="sum-row"><span class="sum-label">MP3</span><span class="sum-value hi">All browsers</span></div>
+      <div class="sum-row"><span class="sum-label">WAV</span><span class="sum-value hi">All browsers</span></div>
+      <div class="sum-row"><span class="sum-label">M4A / AAC</span><span class="sum-value hi">All browsers</span></div>
+      <div class="sum-row"><span class="sum-label">AIFF</span><span class="sum-value">Safari only</span></div>
+      <div class="sum-row"><span class="sum-label">OGG</span><span class="sum-value">Chrome only</span></div>
+      <div class="sum-row"><span class="sum-label">FLAC</span><span class="sum-value">Chrome only</span></div>
+    </div>
+    <p class="card-sub" style="margin-bottom:1.2rem">For best results across all devices, convert your file to <strong style="color:#CCFF00">MP3</strong> before uploading.</p>
+    <button class="btn-primary" onclick="closeFmt()">Try Another File</button>
   </div>
 </div>
 
@@ -707,6 +741,7 @@ function renderTut(){
 }
 function openFeedback(){document.getElementById('feedbackModal').classList.add('show');setTimeout(()=>document.getElementById('feedbackText').focus(),100);}
 function closeFeedback(){document.getElementById('feedbackModal').classList.remove('show');}
+function closeFmt(){document.getElementById('fmtModal').classList.remove('show');}
 function submitFeedback(){
   const msg=document.getElementById('feedbackText').value.trim();
   if(!msg){document.getElementById('feedbackText').style.borderColor='rgba(239,68,68,0.5)';return;}
@@ -784,7 +819,15 @@ document.getElementById('fileInput').addEventListener('change',async e=>{
   ANA=ACX.createAnalyser();ANA.fftSize=1024;
   ANA.connect(ACX.destination);
 
-  BUF=await ACX.decodeAudioData(await file.arrayBuffer());
+  let decoded;
+  try {
+    decoded = await ACX.decodeAudioData(await file.arrayBuffer());
+  } catch(err) {
+    document.getElementById('upload').classList.remove('hide');
+    document.getElementById('fmtModal').classList.add('show');
+    return;
+  }
+  BUF=decoded;
   dur=BUF.duration;poff=0;betaDone=false;
 
   setTimeout(()=>{
