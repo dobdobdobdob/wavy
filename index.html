@@ -622,10 +622,10 @@ async function startAudio(){
   SRC.buffer=BUF;
   SRC.connect(ANA);
   ANA.connect(ACX.destination);
+  startRecording(); // set up audio capture BEFORE playback starts
   SRC.start(0,poff);
   t0=ACX.currentTime-poff;
   playing=true;
-  startRecording(); // only start recording when user hits Play
   const btn=document.getElementById('playBtn');
   btn.textContent='Record';
   btn.classList.remove('on');
@@ -695,7 +695,6 @@ function pickPalette(name){
   ctx.fillStyle=`rgb(${P.bg})`;
   ctx.fillRect(0,0,W,H);
   shapes=[];
-  restartRecordingIfActive();
 }
 // Close theme picker if clicking outside
 document.addEventListener('click',e=>{
@@ -869,7 +868,6 @@ function loadLogo(input){
     // Reset file input so same file can be re-uploaded
     input.value = '';
     showDragHandle();
-    restartRecordingIfActive();
     toast('Logo added — drag to reposition');
   };
   img.onerror = () => toast('Could not load image — use PNG or SVG');
@@ -882,7 +880,6 @@ function clearLogo(){
   document.getElementById('logoInput').value = '';
   document.getElementById('logoPicker').classList.remove('show');
   document.getElementById('logo-drag-handle').style.display='none';
-  restartRecordingIfActive();
   toast('Logo removed');
 }
 
