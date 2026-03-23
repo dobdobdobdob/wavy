@@ -619,8 +619,7 @@ async function startAudio(){
       playing=false;poff=0;
       document.getElementById('playBtn').textContent='Play';
       document.getElementById('playBtn').classList.remove('on','recording');
-      stopRecording();
-      setTimeout(()=>{ showSum(); },800);
+      stopRecording(()=>{ setTimeout(()=>{ showSum(); },300); });
     }
   };
 }
@@ -641,11 +640,10 @@ async function togglePlay(){
   if(ACX && ACX.state==='suspended') await ACX.resume();
   if(playing){
     stopAudio();
-    stopRecording();
+    stopRecording(()=>{ setTimeout(()=>{ showSum(); },300); });
     const btn=document.getElementById('playBtn');
     btn.textContent='Play';
     btn.classList.remove('on','recording');
-    setTimeout(()=>{ showSum(); },800);
   } else {
     await startAudio();
   }
@@ -1007,18 +1005,13 @@ function startRecording(){
       ...canvasStream.getVideoTracks(),
       ...audioStream.getAudioTracks()
     ]);
-    // WebM chunks concatenate reliably via Blob on desktop.
-    // MP4 fragmented chunks from Chrome can produce a container that
-    // players only partially parse, causing apparent truncation on long tracks.
-    // Use MP4 first only on mobile where WebM MediaRecorder is unavailable.
-    const mimes = [
+    const mime = [
       'video/mp4;codecs=avc1,mp4a',
       'video/mp4',
       'video/webm;codecs=vp9,opus',
       'video/webm;codecs=vp8,opus',
       'video/webm'
-    ];
-    const mime = mimes.find(m=>{ try{ return MediaRecorder.isTypeSupported(m); }catch(e){ return false; } }) || '';
+    ].find(m=>{ try{ return MediaRecorder.isTypeSupported(m); }catch(e){ return false; } }) || '';
     recorder = new MediaRecorder(combined, {mimeType:mime, videoBitsPerSecond:bitrate});
     recorder._audioDest = audioDest;
     recorder.ondataavailable = e => { if(e.data.size>0) recChunks.push(e.data); };
