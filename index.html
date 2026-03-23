@@ -329,23 +329,6 @@ html,body{width:100%;height:100%;background:#080808;overflow:hidden;cursor:none;
 </div>
 
 <!-- BETA MODAL -->
-<div class="modal" id="betaModal">
-  <div class="card">
-    <div class="card-title">Enjoying Waveform<span>?</span></div>
-    <p class="card-sub">Join the beta list — be first to know when video export launches. First export on us.</p>
-    <div class="success-msg" id="betaOk">✓ You're on the list — we'll be in touch!</div>
-    <div id="betaForm">
-      <div class="field">
-        <label class="flabel">Your Email</label>
-        <div class="email-row">
-          <input class="email-input" id="betaEmail" type="email" placeholder="your@email.com">
-          <button class="email-btn" onclick="submitBeta()">Join Beta</button>
-        </div>
-      </div>
-    </div>
-    <button class="btn-skip" onclick="skipBeta()">Keep previewing for free</button>
-  </div>
-</div>
 
 <!-- SUMMARY MODAL -->
 <div class="modal" id="sumModal">
@@ -501,7 +484,6 @@ let ACX=null, ANA=null, SRC=null, BUF=null;
 let playing=false, t0=0, poff=0, dur=0, nrg=0;
 let suppress=false, srcGen=0;
 let recorder=null, recChunks=[], isRecording=false;
-let betaDone = localStorage.getItem('waveform_beta') === 'true';
 let palette='default';
 let logoImg=null, logoX=0.78, logoY=0.04, logoSize=120; // normalized position + size
 const PALETTES={
@@ -638,7 +620,7 @@ async function startAudio(){
       document.getElementById('playBtn').textContent='Play';
       document.getElementById('playBtn').classList.remove('on','recording');
       stopRecording();
-      setTimeout(()=>{ document.getElementById('betaModal').classList.add('show'); },800);
+      setTimeout(()=>{ showSum(); },800);
     }
   };
 }
@@ -663,7 +645,7 @@ async function togglePlay(){
     const btn=document.getElementById('playBtn');
     btn.textContent='Play';
     btn.classList.remove('on','recording');
-    setTimeout(()=>{ document.getElementById('betaModal').classList.add('show'); },800);
+    setTimeout(()=>{ showSum(); },800);
   } else {
     await startAudio();
   }
@@ -749,30 +731,6 @@ function doSkipInfo(){
   setTimeout(()=>document.getElementById('fileInput').click(), 50);
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('infoModal').classList.contains('show'))doContinue();});
-
-function skipBeta(){
-  document.getElementById('betaModal').classList.remove('show');
-  showSum();
-}
-
-function submitBeta(){
-  const em=document.getElementById('betaEmail').value;
-  if(!em||!em.includes('@')){document.getElementById('betaEmail').style.borderColor='rgba(239,68,68,0.5)';return;}
-  betaDone=true;
-  localStorage.setItem('waveform_beta','true');
-  // Send email to Resend via Cloudflare Worker
-  fetch('https://waveform-email.thedobrien.workers.dev', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({email: em})
-  }).catch(()=>{}); // silent fail - don't block UX
-  document.getElementById('betaForm').style.display='none';
-  document.getElementById('betaOk').style.display='block';
-  setTimeout(()=>{
-    document.getElementById('betaModal').classList.remove('show');
-    showSum();
-  },2000);
-}
 
 function showSum(){
   const SL={basic:'Basic',animals:'Animals',flowers:'Flowers',intergalactic:'Galactic'};
@@ -1122,7 +1080,7 @@ document.getElementById('fileInput').addEventListener('change',async e=>{
     return;
   }
   BUF=decoded;
-  dur=BUF.duration;poff=0;betaDone=false;
+  dur=BUF.duration;poff=0;
 
   setTimeout(()=>{
     document.getElementById('controls').classList.add('show');
